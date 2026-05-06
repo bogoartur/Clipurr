@@ -100,6 +100,17 @@ struct ClipboardRowView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+        // Placeholder — Task 21.1 will implement the NSWorkspace icon + multi-file suffix + stale indicator.
+        case .file(let urls):
+            HStack(spacing: 6) {
+                Image(systemName: "doc")
+                    .foregroundStyle(.secondary)
+                Text(urls.first?.lastPathComponent ?? "File")
+                    .font(.system(size: 13))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
         }
     }
 

@@ -211,15 +211,15 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
 - [x] 10. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Extend data model for new content and metadata
-  - [ ] 11.1 Add `.file([URL])` case to `ClipboardItemContent`
+- [x] 11. Extend data model for new content and metadata
+  - [x] 11.1 Add `.file([URL])` case to `ClipboardItemContent`
     - Extend the `ClipboardItemContent` enum with a `.file([URL])` case
     - Add `case file` to the `CodingKeys`; encode as an array of URL strings and decode via `decodeIfPresent`, parsing each string with `URL(string:)` and dropping invalid entries
     - If the resulting URL array is empty after parsing, throw `DecodingError.dataCorrupted` so the surrounding item is skipped rather than silently becoming an empty file item
     - Update the `Equatable` synthesis (automatic via the new case) and confirm `.text` / `.image` / `.file` compare only within their own case
     - _Requirements: 17.1, 17.6_
 
-  - [ ] 11.2 Extend `ClipboardItem` with pin, rich, and OCR metadata
+  - [x] 11.2 Extend `ClipboardItem` with pin, rich, and OCR metadata
     - Add `var isPinned: Bool = false`, `var rtfData: Data? = nil`, `var htmlData: Data? = nil`, and `var ocrText: String? = nil` stored properties on `ClipboardItem`
     - Implement a custom `init(from:)` that uses `decodeIfPresent` for every new field with the defaults above so older `history.json` files decode without error
     - Extend `textPreview` so that `.file(urls)` returns `urls[0].lastPathComponent` plus, when `urls.count > 1`, a `" +(n) more"` suffix; `.text` and `.image` branches keep their existing behavior
@@ -237,8 +237,8 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Assert `.file([fileURL("a.txt"), fileURL("b.txt"), fileURL("c.txt")])` → `"a.txt +2 more"`
     - _Requirements: 17.1_
 
-- [ ] 12. Add PreferencesStore
-  - [ ] 12.1 Implement `PreferencesStore` and the `togglePopover` shortcut name
+- [x] 12. Add PreferencesStore
+  - [x] 12.1 Implement `PreferencesStore` and the `togglePopover` shortcut name
     - Create `Sources/CopyCat/Domain/PreferencesStore.swift` with a `HistoryCap` enum (`.finite(Int)` and `.unlimited`, `Codable` via a single-key container) and a `RecopyFormat` enum (`.rich`, `.plain`)
     - Create `PreferencesStore` as an `@Observable @MainActor final class` with stored properties `globalShortcut: KeyboardShortcuts.Name`, `historyCap: HistoryCap`, `ageExpiryDays: Int?`, `defaultRecopyFormat: RecopyFormat`, `autoPasteEnabled: Bool`, `launchAtLogin: Bool`
     - Each property has a `didSet` that writes into `UserDefaults.standard` under a stable `prefs.*` key; an `init()` reads the defaults back, falling through to the documented defaults when a key is absent
@@ -251,14 +251,14 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Assert that `PreferencesStore()` on empty defaults yields `historyCap == .finite(50)`, `ageExpiryDays == nil`, `defaultRecopyFormat == .rich`, `autoPasteEnabled == false`
     - _Requirements: 10.8, 11.2, 11.7, 15.2, 15.6_
 
-- [ ] 13. Add OCR subsystem
-  - [ ] 13.1 Implement `OCRService`
+- [x] 13. Add OCR subsystem
+  - [x] 13.1 Implement `OCRService`
     - Create `Sources/CopyCat/Domain/OCRService.swift` with an `actor OCRService` that owns a `recognitionLanguages: [String]` array defaulted to at least 8 entries (`en-US`, `de-DE`, `fr-FR`, `es-ES`, `it-IT`, `pt-BR`, `ja-JP`, `zh-Hans`)
     - Implement `func recognize(imageData: Data) async -> String` that decodes `Data → CGImage` via `CGImageSourceCreateWithData`, runs a `VNRecognizeTextRequest` with `recognitionLevel = .accurate`, `recognitionLanguages = self.recognitionLanguages`, and `usesLanguageCorrection = true`, and returns the joined top candidates separated by newlines
     - Any decode, `VNImageRequestHandler.perform` throw, or empty observations path returns `""` and logs via `os_log`
     - _Requirements: 9.1, 9.2, 9.8_
 
-  - [ ] 13.2 Implement `OCRIndex`
+  - [x] 13.2 Implement `OCRIndex`
     - Create `Sources/CopyCat/Domain/OCRIndex.swift` with `@Observable final class OCRIndex` exposing `private(set) var texts: [UUID: String] = [:]`, `func set(_ text: String, for id: UUID)`, and `func clear(for id: UUID)`
     - _Requirements: 9.6_
 
@@ -274,8 +274,8 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Run a minimum of 100 iterations
     - **Validates: Requirements 9.4, 9.5**
 
-- [ ] 14. Add ContentTypeExtractor
-  - [ ] 14.1 Implement `ContentTypeExtractor`
+- [x] 14. Add ContentTypeExtractor
+  - [x] 14.1 Implement `ContentTypeExtractor`
     - Create `Sources/CopyCat/Domain/ContentTypeExtractor.swift` with `enum ContentTypeExtractor { static func extract(from pasteboard: NSPasteboard) -> ClipboardItemRepresentation? }`
     - Define `struct ClipboardItemRepresentation: Equatable` with `enum Payload: Equatable { case text(plain: String, rtf: Data?, html: Data?); case image(Data); case file([URL]) }` and a single `payload` field
     - Priority order inside `extract`: file URLs (via `.fileURL` / `public.file-url`) first; then text (read `.string`, and alongside try `.rtf` and `.html`; derive plain from rich via `NSAttributedString(data:options:documentAttributes:)` when plain is absent); then image (PNG, or TIFF converted to PNG via `NSBitmapImageRep`, preserving the existing 10 MB size cap)
@@ -292,17 +292,17 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Pasteboard with both file URLs and plain text → `.file([...])` (file wins per the priority order)
     - _Requirements: 10.1, 10.2, 17.2_
 
-- [ ] 15. Add SyntaxHighlighter protocol and plain fallback
-  - [ ] 15.1 Define the `SyntaxHighlighter` protocol
+- [x] 15. Add SyntaxHighlighter protocol and plain fallback
+  - [x] 15.1 Define the `SyntaxHighlighter` protocol
     - Create `Sources/CopyCat/Domain/SyntaxHighlighter.swift` with `protocol SyntaxHighlighter { func highlight(_ source: String, language: String?) -> NSAttributedString }`
     - _Requirements: 10.4, 10.5_
 
-  - [ ] 15.2 Implement `PlainMonospaceHighlighter`
+  - [x] 15.2 Implement `PlainMonospaceHighlighter`
     - In the same file, add `struct PlainMonospaceHighlighter: SyntaxHighlighter` whose `highlight(_:language:)` returns an `NSAttributedString` built from the raw source string with a single attribute `[.font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)]`, ignoring the `language` hint
     - This implementation stays in place until a concrete highlighting library is chosen; all callers depend on the protocol, never on the fallback concrete type
     - _Requirements: 10.4_
 
-  - [ ] 15.3 Implement `CodeDetector`
+  - [x] 15.3 Implement `CodeDetector`
     - Create `Sources/CopyCat/Domain/CodeDetector.swift` with `enum CodeDetector { struct Verdict: Equatable { let isCode: Bool; let language: String? }; static func detect(_ source: String) -> Verdict }`
     - Return `Verdict(isCode: false, language: nil)` for sources shorter than 20 characters or containing no structural punctuation (`{`, `}`, `;`, `:`, `=`)
     - Score the source using brace/semicolon density, shebang detection on the first line (`swift`, `python`, `bash`, `node`), and keyword matches per language (`swift`: `func`, `let`, `var`, `struct`, `class`, `guard`; `python`: `def`, `import`, `class`, `if __name__`; `javascript`: `function`, `const`, `let`, `=>`; `json`: leading `{` or `[` with balanced braces)
@@ -318,18 +318,18 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Assert a JSON snippet (`{ "a": 1 }`) returns `Verdict(isCode: true, language: "json")`
     - _Requirements: 10.4_
 
-  - [ ] 15.5 Record the highlighter-library-selection deferral
+  - [x] 15.5 Record the highlighter-library-selection deferral
     - Add a `// NOTE:` comment block at the top of `SyntaxHighlighter.swift` explaining that the concrete library choice between [Splash](https://github.com/JohnSundell/Splash) and [Sourceful](https://github.com/louisdh/sourceful) is deferred to a follow-up and that a single adapter file (e.g. `SplashSyntaxHighlighter.swift` or `SourcefulSyntaxHighlighter.swift`) can later be added beside this file without touching the view layer
     - This task is documentation-only and does not ship a library adapter
     - _Requirements: 10.4, 10.5_
 
-- [ ] 16. Checkpoint — Domain additions compile and existing tests still pass
+- [x] 16. Checkpoint — Domain additions compile and existing tests still pass
   - Run `swift build` and confirm zero warnings / errors across the new domain files (`PreferencesStore`, `OCRService`, `OCRIndex`, `ContentTypeExtractor`, `SyntaxHighlighter`, `PlainMonospaceHighlighter`, `CodeDetector`) and the extended `ClipboardItem` / `ClipboardItemContent`
     - Run `swift test` and confirm that the existing baseline tests from tasks 1–10 still pass with no regressions
     - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 17. Extend HistoryStore for smart dedup, pins, cap, expiry, rich recopy
-  - [ ] 17.1 Implement smart-dedup `addRepresentation(_:)`
+  - [~] 17.1 Implement smart-dedup `addRepresentation(_:)`
     - Add `func addRepresentation(_ rep: ClipboardItemRepresentation)` on `HistoryStore`
     - When the representation's content equals an existing **non-pinned** item's content at any position, remove that item, update its `createdAt = Date()`, merge in any newly-present `rtfData` / `htmlData`, re-insert at index 0, and leave `items.count` unchanged
     - When the representation's content equals an existing **pinned** item's content, leave the pinned item in place, still run the non-pinned dedup check so no new non-pinned duplicate is created, and do nothing further if no non-pinned match exists (Req 16.3)
@@ -337,33 +337,33 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Persist via `saveToDisk()`
     - _Requirements: 16.1, 16.2, 16.3, 16.4_
 
-  - [ ] 17.2 Implement `togglePin(_:)`
+  - [~] 17.2 Implement `togglePin(_:)`
     - Add `func togglePin(_ item: ClipboardItem)` that flips `isPinned` on the matching item (by `id`) and persists
     - Do not mutate `items` order directly — ordering is derived by `filteredItems`
     - _Requirements: 12.1, 12.2, 12.3, 12.8_
 
-  - [ ] 17.3 Extend `filteredItems` with OCR-match and pinned-first sort
+  - [~] 17.3 Extend `filteredItems` with OCR-match and pinned-first sort
     - Update `filteredItems` so that, after filtering, items are sorted with `isPinned == true` first, then by `createdAt` descending
     - Extend the filter predicate so that, for `.text(s)`, the item matches when `s` OR `item.ocrText` contains the query; for `.image`, the item matches when `item.ocrText` contains the query; for `.file(urls)`, the item matches when any URL's `lastPathComponent` or full `path` contains the query
     - _Requirements: 9.6, 12.4_
 
-  - [ ] 17.4 Implement `enforceCap(_ cap: HistoryCap)`
+  - [~] 17.4 Implement `enforceCap(_ cap: HistoryCap)`
     - When `cap == .unlimited`, return without change
     - Otherwise, count only non-pinned items; while that count exceeds `n` (for `cap == .finite(n)`), remove the oldest non-pinned item (smallest `createdAt`)
     - Never remove pinned items
     - Persist after eviction
     - _Requirements: 12.6, 15.3, 15.4_
 
-  - [ ] 17.5 Implement `enforceAgeExpiry(days:)`
+  - [~] 17.5 Implement `enforceAgeExpiry(days:)`
     - Add `func enforceAgeExpiry(days: Int)` that removes every non-pinned item whose `createdAt` is older than `days * 86400` seconds from `Date()`, leaves pinned items untouched, and persists when any item was removed
     - _Requirements: 12.7, 15.7_
 
-  - [ ] 17.6 Implement `applyOCR(_:to:)`
+  - [~] 17.6 Implement `applyOCR(_:to:)`
     - Add `func applyOCR(_ text: String, to id: UUID)` that updates `ocrText` on the matching item, mirrors the value into `ocrIndex.set(text, for: id)`, and persists
     - Writing the same `(text, id)` tuple a second time must produce a state equal to the first write (idempotent); guard with an equality check before persist
     - _Requirements: 9.4, 9.5_
 
-  - [ ] 17.7 Extend `recopy(_:writer:format:)` for rich and file items
+  - [~] 17.7 Extend `recopy(_:writer:format:)` for rich and file items
     - Change the signature to `func recopy(_ item: ClipboardItem, writer: ClipboardWritable, format: RecopyFormat = .rich)`
     - Preserve the existing `ignoreSelfWrite` handshake
     - For `.text` items with `format == .rich`: write the plain string under `.string`, and when present also write `rtfData` under `.rtf` and `htmlData` under `.html`
@@ -419,13 +419,13 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - _Requirements: 12.1–12.8, 15.3, 15.4, 15.7, 16.1–16.4, 10.6, 10.7_
 
 - [ ] 18. Rewire ClipboardMonitor
-  - [ ] 18.1 Replace direct pasteboard reading with `ContentTypeExtractor`
+  - [~] 18.1 Replace direct pasteboard reading with `ContentTypeExtractor`
     - Inject `extractor: ContentTypeExtractor.Type = ContentTypeExtractor.self` on `ClipboardMonitor` (or accept it via the initializer for testability)
     - Replace `readContent(from:)` with a call to `extractor.extract(from: pasteboard)`
     - Change `onNewContent` to `((ClipboardItemRepresentation) -> Void)?` and remove the old `ClipboardItemContent` callback
     - _Requirements: 10.1, 10.2, 17.2_
 
-  - [ ] 18.2 Fire async OCR for image representations
+  - [~] 18.2 Fire async OCR for image representations
     - Inject `ocrService: OCRService` and `var onOCRCompleted: ((UUID, String) -> Void)?`
     - When the extracted representation is `.image(data)`, after handing off to `onNewContent`, launch a `Task.detached` that calls `await ocrService.recognize(imageData: data)` and, on the `@MainActor`, invokes `onOCRCompleted(id, text)` where `id` is obtained from the downstream `HistoryStore` (via a small `lastInsertedImageID` hook the monitor exposes, or by having the store expose the id through the representation path)
     - _Requirements: 9.3, 9.4_
@@ -436,17 +436,17 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - _Requirements: 9.3, 9.4, 10.1, 10.2, 17.2_
 
 - [ ] 19. Replace KeyboardShortcutManager with the KeyboardShortcuts library
-  - [ ] 19.1 Add the `KeyboardShortcuts` package dependency
+  - [x] 19.1 Add the `KeyboardShortcuts` package dependency
     - In `Package.swift`, append `.package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.0")` to `dependencies` and add `.product(name: "KeyboardShortcuts", package: "KeyboardShortcuts")` to the `CopyCat` target's `dependencies`
     - Commit the updated `Package.resolved`
     - _Requirements: 11.1, 11.3_
 
-  - [ ] 19.2 Register the toggle shortcut via the library
+  - [~] 19.2 Register the toggle shortcut via the library
     - In `AppDelegate.applicationDidFinishLaunching`, replace the `KeyboardShortcutManager.register { ... }` call with `KeyboardShortcuts.onKeyDown(for: .togglePopover) { [weak self] in self?.statusBarController.togglePopover() }`
     - The `KeyboardShortcuts.Name.togglePopover` declaration from task 12.1 carries the Cmd+Shift+V default, preserving the baseline
     - _Requirements: 11.3_
 
-  - [ ] 19.3 Remove the hand-rolled `KeyboardShortcutManager`
+  - [~] 19.3 Remove the hand-rolled `KeyboardShortcutManager`
     - Delete `Sources/CopyCat/AppKit/KeyboardShortcutManager.swift`
     - Remove the `keyboardShortcutManager` property and `unregister()` call from `AppDelegate`
     - If any test file still references the deleted type, update it to exercise the library's `KeyboardShortcuts.onKeyDown` integration instead
@@ -458,19 +458,19 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - _Requirements: 11.1, 11.3_
 
 - [ ] 20. Add Quick Paste and Auto Paste
-  - [ ] 20.1 Implement `AutoPasteService`
+  - [~] 20.1 Implement `AutoPasteService`
     - Create `Sources/CopyCat/Domain/AutoPasteService.swift` with `@MainActor final class AutoPasteService` and a private `previousApp: NSRunningApplication?`
     - `func capturePreviousFrontmostApp()` snapshots `NSWorkspace.shared.frontmostApplication`
     - `func pasteIntoPreviousApp()` returns early when `previousApp == nil`; calls `AXIsProcessTrusted()`, and when `false` invokes `promptForAccessibilityIfNeeded()` and returns; otherwise activates the captured app via `previousApp?.activate(options: [])`, then `DispatchQueue.main.asyncAfter(deadline: .now() + 0.05)` posts key-down / key-up `CGEvent`s for `kVK_ANSI_V` with `.maskCommand` to `.cghidEventTap`
     - `func promptForAccessibilityIfNeeded() -> Bool` calls `AXIsProcessTrustedWithOptions([kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)` and returns the trust state; a one-per-session banner or alert explains that auto-paste is skipped when denied
     - _Requirements: 11.8, 11.9, 11.10_
 
-  - [ ] 20.2 Capture the previous frontmost app when the popover shows
+  - [~] 20.2 Capture the previous frontmost app when the popover shows
     - In `StatusBarController`, add an injected `autoPasteService: AutoPasteService`
     - At the top of `showPopover()`, call `autoPasteService.capturePreviousFrontmostApp()` **before** `popover.show(relativeTo:...)` so we snapshot the caller before CopyCat takes focus
     - _Requirements: 11.8_
 
-  - [ ] 20.3 Implement the Cmd+1…Cmd+9 quick-paste handler
+  - [~] 20.3 Implement the Cmd+1…Cmd+9 quick-paste handler
     - In `ClipboardListView`, inject `preferences: PreferencesStore`, `autoPasteService: AutoPasteService`, `store: HistoryStore`, and `monitor: ClipboardMonitor` (via the existing `PopoverView` props)
     - Attach nine `.onKeyPress(keys: [.init("1")], phases: .down)` … `.onKeyPress(keys: [.init("9")], phases: .down)` modifiers, each gated by `.modifiers(.command)` when the API supports it (or by inspecting `press.modifiers` inside the handler)
     - On match, call a single `quickPasteHandler(_ digit: Int)` helper: compute `index = digit - 1`, guard `filteredItems.indices.contains(index)` (out-of-bounds → return `.handled` and do nothing), then `store.recopy(filteredItems[index], writer: monitor, format: preferences.defaultRecopyFormat)`, if `preferences.autoPasteEnabled` call `autoPasteService.pasteIntoPreviousApp()`, then `onDismiss()`
@@ -484,7 +484,7 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - _Requirements: 11.5, 11.6, 11.7, 11.8, 11.9, 11.10_
 
 - [ ] 21. Extend SwiftUI views for files, pins, drag, preview lift, and OCR
-  - [ ] 21.1 Extend `ClipboardRowView` for file items, pins, and drag
+  - [~] 21.1 Extend `ClipboardRowView` for file items, pins, and drag
     - Add a `.file(urls)` branch to `contentPreview`: an `NSWorkspace.shared.icon(forFile: urls[0].path)` rendered via `Image(nsImage:)` at 28×28, `urls[0].lastPathComponent` as the main label, and when `urls.count > 1` a secondary `"+(urls.count - 1) more"` label on the same row
     - When `FileManager.default.fileExists(atPath: urls[0].path) == false`, render the label with `.foregroundStyle(.secondary)` and a `.strikethrough()` modifier (stale indicator)
     - When `item.isPinned`, overlay a small `Image(systemName: "pin.fill")` in the top-leading corner of the row
@@ -492,14 +492,14 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Attach `.onDrag { NSItemProvider(...) }`: for `.text` register `.string`, plus `.rtf` and `.html` when the item has those; for `.image(data)` register `.png`; for `.file(urls)` return one provider per URL using `registerFileRepresentation(forTypeIdentifier: UTType.fileURL.identifier, ...)`
     - _Requirements: 12.1, 12.5, 14.1, 14.2, 14.3, 14.6, 17.3, 17.4, 17.7_
 
-  - [ ] 21.2 Lift the preview state into `ClipboardListView` (unified preview)
+  - [~] 21.2 Lift the preview state into `ClipboardListView` (unified preview)
     - Remove `@State private var isShowingPreview` and the row-local `.popover` from `ClipboardRowView`; replace the Force Touch `onDeepPress` handler with a closure `onRequestPreview: () -> Void` that the list supplies
     - In `ClipboardListView`, add `@State private var isShowingPreview: Bool = false` and `@State private var previewItem: ClipboardItem?`, and pass `onRequestPreview: { previewItem = items[index]; isShowingPreview = true }` into each `ClipboardRowView`
     - Add `.onKeyPress(.space)` at the list level: when `isShowingPreview == false` and a row is focused, set `previewItem = items[focusedIndex]; isShowingPreview = true`; when `isShowingPreview == true`, set `isShowingPreview = false` and return keyboard focus to the originating row
     - Present the preview via a single `.popover(isPresented: $isShowingPreview, arrowEdge: .trailing) { if let previewItem { ClipboardItemPreview(item: previewItem) } }` attached at the list level
     - _Requirements: 13.1, 13.2, 13.4, 13.5, 13.6_
 
-  - [ ] 21.3 Extend `ClipboardItemPreview` for files, rich text, code, and OCR
+  - [~] 21.3 Extend `ClipboardItemPreview` for files, rich text, code, and OCR
     - Add a `.file(urls)` branch that shows a 64×64 `NSWorkspace.icon(forFile:)`, the file name as a title, the full `urls[0].path` in a monospaced body row, `FileManager` size and modification-date metadata, and a `Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting(urls) }`
     - For `.text(string)`, when `item.rtfData != nil` decode via `NSAttributedString(data: rtf, options: [.documentType: NSAttributedString.DocumentType.rtf], documentAttributes: nil)` and render via `AttributedString`; when `rtfData == nil` but `htmlData != nil` decode with `.html`; on decode failure fall back to the plain branch
     - For `.text(string)` without rich variants, call `let verdict = CodeDetector.detect(string)`; if `verdict.isCode`, render `syntaxHighlighter.highlight(string, language: verdict.language)` via `AttributedString`
@@ -507,12 +507,12 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Inject `syntaxHighlighter: any SyntaxHighlighter` through the initializer (default: `PlainMonospaceHighlighter()`)
     - _Requirements: 9.7, 10.3, 10.4, 13.3, 17.3_
 
-  - [ ] 21.4 Suspend arrow-key navigation while the preview is open
+  - [~] 21.4 Suspend arrow-key navigation while the preview is open
     - In `ClipboardListView`, short-circuit the `.onKeyPress(.upArrow)` and `.onKeyPress(.downArrow)` handlers to `return .ignored` when `isShowingPreview == true`, so focus does not move underneath the preview
     - `Escape` should close the preview first (by flipping `isShowingPreview = false`) and only dismiss the popover when the preview is already closed
     - _Requirements: 13.5_
 
-  - [ ] 21.5 Prevent popover auto-dismiss during drag
+  - [~] 21.5 Prevent popover auto-dismiss during drag
     - Add a `DragInFlightMonitor` helper in `ClipboardListView` (or `PopoverView`) that uses `NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged)` on the popover window to observe when a drag begins originating from a row and ends
     - While a drag is in progress, temporarily set `NSPopover.behavior = .applicationDefined` on the enclosing popover; restore the previous behavior (`.transient`) when the drag ends
     - Expose a single hook the view can call to set/restore the behavior via the `StatusBarController`
@@ -529,7 +529,7 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - _Requirements: 13.1, 13.2, 13.4, 13.6, 14.1, 14.2, 14.3, 14.4, 14.6, 17.3, 17.4_
 
 - [ ] 22. Build PreferencesView and wire launch-at-login through PreferencesStore
-  - [ ] 22.1 Create `PreferencesView`
+  - [~] 22.1 Create `PreferencesView`
     - Create `Sources/CopyCat/Views/PreferencesView.swift` with a SwiftUI `Form` divided into sections:
       - **General**: `Toggle("Launch at login", isOn: $preferences.launchAtLogin)` (the `didSet` on `PreferencesStore.launchAtLogin` delegates to `LaunchAtLoginManager.setEnabled(_:)`); `Picker("Default re-copy format", selection: $preferences.defaultRecopyFormat)` with `.rich` and `.plain` cases
       - **Shortcuts**: `KeyboardShortcuts.Recorder("Toggle popover", name: .togglePopover)`
@@ -537,7 +537,7 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
       - **Quick Paste**: `Toggle("Auto-paste after Cmd+1…Cmd+9", isOn: $preferences.autoPasteEnabled)` plus a secondary helper `Text("Requires Accessibility permission. You will be prompted the first time you enable this.")` and a `Button("Open Accessibility Settings") { NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!) }`
     - _Requirements: 1.5, 10.8, 11.1, 15.1, 15.5, 15.8_
 
-  - [ ] 22.2 Present `PreferencesView` from the `Settings` scene
+  - [~] 22.2 Present `PreferencesView` from the `Settings` scene
     - In `Sources/CopyCat/CopyCatApp.swift`, replace `Settings { EmptyView() }` with `Settings { PreferencesView(preferences: appDelegate.preferencesStore, launchAtLogin: appDelegate.launchAtLoginManager) }`
     - _Requirements: 1.5, 11.1_
 
@@ -547,27 +547,27 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - _Requirements: 1.5, 10.8, 11.1, 15.1, 15.5, 15.8_
 
 - [ ] 23. Wire everything in AppDelegate
-  - [ ] 23.1 Instantiate new services on launch
+  - [~] 23.1 Instantiate new services on launch
     - In `AppDelegate.applicationDidFinishLaunching`, instantiate `preferencesStore = PreferencesStore()`, `ocrService = OCRService()`, `autoPasteService = AutoPasteService()`, and `expiryScheduler = ExpiryScheduler()`
     - Replace the `StatusBarController()` init with `StatusBarController(autoPasteService: autoPasteService)` and wire the shared `PreferencesStore` and `AutoPasteService` instances into the popover content
     - _Requirements: 9.1–9.8, 10.1–10.8, 11.1–11.10, 12.1–12.8, 13.1–13.6, 14.1–14.6, 15.1–15.8, 16.1–16.4, 17.1–17.7_
 
-  - [ ] 23.2 Register the global shortcut
+  - [~] 23.2 Register the global shortcut
     - Call `KeyboardShortcuts.onKeyDown(for: .togglePopover) { [weak self] in self?.statusBarController.togglePopover() }` from `applicationDidFinishLaunching`
     - _Requirements: 11.3_
 
-  - [ ] 23.3 Rewire ClipboardMonitor callbacks into HistoryStore
+  - [~] 23.3 Rewire ClipboardMonitor callbacks into HistoryStore
     - Set `clipboardMonitor.onNewContent = { [weak self] rep in self?.historyStore.addRepresentation(rep) }`
     - Set `clipboardMonitor.onOCRCompleted = { [weak self] id, text in self?.historyStore.applyOCR(text, to: id) }`
     - Start monitoring after the callbacks are assigned
     - _Requirements: 9.3, 9.4, 16.1, 17.2_
 
-  - [ ] 23.4 Observe PreferencesStore for cap and expiry enforcement
+  - [~] 23.4 Observe PreferencesStore for cap and expiry enforcement
     - Using the `@Observable` observation pattern (`withObservationTracking`), react to `preferencesStore.historyCap` by calling `historyStore.enforceCap(_:)` and to `preferencesStore.ageExpiryDays` by calling `historyStore.enforceAgeExpiry(days:)` whenever the value changes
     - Start `expiryScheduler.start(store: historyStore, preferences: preferencesStore)` so it runs once at launch and on an hourly timer
     - _Requirements: 15.7, 15.8_
 
-  - [ ] 23.5 Pass AutoPasteService and PreferencesStore into the popover content
+  - [~] 23.5 Pass AutoPasteService and PreferencesStore into the popover content
     - Update `PopoverView`'s initializer to accept `preferences: PreferencesStore` and `autoPasteService: AutoPasteService`, and forward them into `ClipboardListView` so the Cmd+1…Cmd+9 handler from task 20.3 can resolve its dependencies
     - Update `AppDelegate`'s `popoverView` construction accordingly
     - _Requirements: 11.8_
@@ -577,7 +577,7 @@ This plan implements CopyCat as a native macOS 26 menu bar clipboard manager usi
     - Smoke test: write a file URL onto an isolated `NSPasteboard` via a fake extractor injection and assert a corresponding `.file` item appears in `historyStore.items`
     - _Requirements: 1.1, 11.3, 17.2_
 
-- [ ] 24. Final checkpoint — All tests pass, including new property tests
+- [~] 24. Final checkpoint — All tests pass, including new property tests
   - Run `swift build` and confirm zero warnings / errors across the entire target
   - Run `swift test` and confirm every required test passes, including all newly-added property tests (Properties 10–16) when the optional PBT sub-tasks have been implemented
   - Ensure all tests pass, ask the user if questions arise.

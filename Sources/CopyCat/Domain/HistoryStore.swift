@@ -63,6 +63,9 @@ final class HistoryStore {
                 return text.localizedCaseInsensitiveContains(searchQuery)
             case .image:
                 return false
+            // Placeholder — Task 17.3 will implement file-name search matching.
+            case .file:
+                return false
             }
         }
     }
@@ -137,6 +140,9 @@ final class HistoryStore {
             pasteboard.setString(text, forType: .string)
         case .image(let data):
             pasteboard.setData(data, forType: .png)
+        // Placeholder — Task 17.7 will add a `format:` parameter and full file/text-path re-copy handling.
+        case .file(let urls):
+            pasteboard.writeObjects(urls as [NSURL])
         }
     }
 

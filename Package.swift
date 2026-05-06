@@ -12,11 +12,15 @@ let package = Package(
         .executable(name: "CopyCat", targets: ["CopyCat"])
     ],
     dependencies: [
-        .package(url: "https://github.com/typelift/SwiftCheck.git", from: "0.12.0")
+        .package(url: "https://github.com/typelift/SwiftCheck.git", from: "0.12.0"),
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.0")
     ],
     targets: [
         .executableTarget(
             name: "CopyCat",
+            dependencies: [
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts")
+            ],
             path: "Sources/CopyCat"
         ),
         .testTarget(

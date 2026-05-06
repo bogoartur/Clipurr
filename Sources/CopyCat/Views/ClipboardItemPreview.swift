@@ -48,6 +48,8 @@ struct ClipboardItemPreview: View {
         switch item.content {
         case .text: return "text.alignleft"
         case .image: return "photo"
+        // Placeholder — Task 21.3 will implement the full file icon/name/path/Reveal in Finder treatment.
+        case .file: return "doc.on.doc"
         }
     }
 
@@ -55,6 +57,8 @@ struct ClipboardItemPreview: View {
         switch item.content {
         case .text: return "Text"
         case .image: return "Image"
+        // Placeholder — Task 21.3 will implement the full file icon/name/path/Reveal in Finder treatment.
+        case .file: return "File"
         }
     }
 
@@ -71,6 +75,9 @@ struct ClipboardItemPreview: View {
             }
             pieces.append(byteCountFormatter.string(fromByteCount: Int64(data.count)))
             return pieces.joined(separator: " · ")
+        // Placeholder — Task 21.3 will implement the full file icon/name/path/Reveal in Finder treatment.
+        case .file(let urls):
+            return urls.count == 1 ? urls[0].lastPathComponent : "\(urls.count) files"
         }
     }
 
@@ -98,6 +105,16 @@ struct ClipboardItemPreview: View {
             } else {
                 Text("Unable to display image")
                     .foregroundStyle(.secondary)
+            }
+
+        // Placeholder — Task 21.3 will implement the full file icon/name/path/Reveal in Finder treatment.
+        case .file(let urls):
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(urls, id: \.self) { url in
+                    Text(url.path)
+                        .font(.system(size: 12, design: .monospaced))
+                        .textSelection(.enabled)
+                }
             }
         }
     }
