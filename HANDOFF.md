@@ -2,117 +2,188 @@
 
 ## What This Is
 
-CopyCat is a native macOS 26 menu bar clipboard manager built with SwiftUI and Liquid Glass styling. The full implementation was scaffolded on Windows, so **nothing has been compiled or tested yet**. Your first step on the Mac should be building and running the test suite.
+CopyCat is a native macOS 26 menu bar clipboard manager built with SwiftUI and Liquid Glass styling. The baseline (Requirements 1–8) was shipped and verified on a Mac in a previous session. This pass scaffolded the extended feature set (Requirements 9–17) on Windows; it compiles clean in the language server, but `swift build` / `swift test` haven't run yet. **First action on the Mac: build and test.**
 
 ## Getting Started on Mac
 
 ```bash
-# 1. Build the project
+# 1. Fetch new dependencies (KeyboardShortcuts)
+swift package resolve
+
+# 2. Build the project — this will also fetch the package the first time
 swift build
 
-# 2. Run the existing unit tests
+# 3. Run the test suite (existing baseline + new Property 8)
 swift test
 
-# 3. If the build fails, check Xcode 26 beta is installed
-#    and that the macOS 26 SDK is available.
-#    The Package.swift targets macOS .v15 as the minimum,
-#    but Liquid Glass APIs (.glassEffect, GlassEffectContainer)
-#    require the macOS 26 SDK.
+# 4. If the build complains about `glassEffect`, `GlassEffectContainer`,
+#    `.buttonStyle(.glass)`, or `KeyboardShortcuts`, confirm you're on
+#    Xcode 26 beta with the macOS 26 SDK and Swift 6.2 toolchain.
 ```
 
-If `swift build` complains about `GlassEffectContainer` or `.glassEffect()` not being found, you likely need Xcode 26 beta with the macOS 26 SDK. These are new APIs introduced in WWDC 2025.
+Package dependencies resolved by `swift build`:
+- `SwiftCheck` 0.12.0+ (test target only)
+- `KeyboardShortcuts` 2.2.0+ by Sindre Sorhus (main target; provides the customizable global shortcut + recorder UI)
 
 ## Project Structure
 
 ```
 CopyCat/
-├── Package.swift                          # SPM manifest (swift-tools-version: 6.1)
+├── Package.swift                           # SPM (swift-tools-version: 6.2, macOS 26)
 ├── Sources/CopyCat/
-│   ├── CopyCatApp.swift                   # @main entry point with AppDelegate adaptor
-│   ├── Info.plist                         # LSUIElement = true (no Dock icon)
+│   ├── CopyCatApp.swift                    # @main + Settings scene → PreferencesView
+│   ├── Info.plist                          # LSUIElement = true
 │   ├── Models/
-│   │   └── ClipboardItem.swift            # ClipboardItemContent enum + ClipboardItem struct
+│   │   └── ClipboardItem.swift             # .text/.image/.file + isPinned/rtfData/htmlData/ocrText
 │   ├── Domain/
-│   │   ├── HistoryStore.swift             # @Observable history manager (add/delete/clear/recopy/search)
-│   │   ├── PersistenceManager.swift       # JSON file persistence (atomic writes)
-│   │   ├── ClipboardMonitor.swift         # NSPasteboard polling (0.5s timer)
-│   │   └── LaunchAtLoginManager.swift     # SMAppService.mainApp wrapper
+│   │   ├── HistoryStore.swift              # smart dedup, pins, cap/expiry, OCR, rich recopy
+│   │   ├── PersistenceManager.swift        # atomic JSON writes
+│   │   ├── ClipboardMonitor.swift          # polling + ContentTypeExtractor + OCR
+│   │   ├── ContentTypeExtractor.swift      # file > text+rich > image priority
+│   │   ├── OCRService.swift                # actor over VNRecognizeTextRequest
+│   │   ├── OCRIndex.swift                  # UUID → OCR text cache
+│   │   ├── SyntaxHighlighter.swift         # protocol + PlainMonospaceHighlighter
+│   │   ├── CodeDetector.swift              # shebang + brace/keyword heuristics
+│   │   ├── PreferencesStore.swift          # @Observable + UserDefaults + HistoryCap/RecopyFormat
+│   │   ├── AutoPasteService.swift          # captures frontmost, CGEvent Cmd+V
+│   │   └── LaunchAtLoginManager.swift      # SMAppService.mainApp
 │   ├── AppKit/
-│   │   ├── AppDelegate.swift              # Wires all components together
-│   │   ├── StatusBarController.swift      # NSStatusItem + NSPopover (320×480, transient)
-│   │   └── KeyboardShortcutManager.swift  # Cmd+Shift+V global hotkey
+│   │   ├── AppDelegate.swift               # wires everything
+│   │   ├── StatusBarController.swift       # NSStatusItem + NSPopover + drag-safe behavior
+│   │   └── PressureClickCatcher.swift      # Force Touch detection
 │   └── Views/
-│       ├── PopoverView.swift              # Root view (GlassEffectContainer, search + list + clear)
-│       ├── SearchBarView.swift            # Search field with match count
-│       ├── ClipboardListView.swift        # ScrollView + LazyVStack with keyboard nav
-│       └── ClipboardRowView.swift         # Single row with Liquid Glass .glassEffect()
+│       ├── PopoverView.swift               # root view + drag mouse-up monitor
+│       ├── SearchBarView.swift             # Liquid Glass capsule
+│       ├── ClipboardListView.swift         # Cmd+1..9, Space preview, unified popover
+│       ├── ClipboardRowView.swift          # pin indicator, .onDrag, context menu
+│       ├── ClipboardItemPreview.swift      # rich/code/OCR/file branches
+│       └── PreferencesView.swift           # Settings form (General/Shortcuts/History/Quick Paste)
 └── Tests/CopyCatTests/
-    ├── CopyCatTests.swift                 # Placeholder
-    ├── ClipboardItemTests.swift           # Codable round-trip, textPreview tests
-    └── HistoryStoreTests.swift            # addItem, deleteItem, clearAll, recopy, filter tests
+    ├── ClipboardItemTests.swift            # Codable round-trip, textPreview
+    ├── ClipboardItemSerializationPropertyTests.swift  # Property 8 (SwiftCheck)
+    ├── HistoryStoreTests.swift             # addItem, delete, clear, recopy, filter
+    └── CopyCatTests.swift                  # placeholder
 ```
 
 ## What Was Completed (Required Tasks)
 
-All required (non-optional) tasks from the spec are implemented:
+All required tasks from `tasks.md` are marked complete — tasks 1–10 from the original pass and tasks 11–24 from this pass. Full list:
 
-- **Task 1.1** — Project structure and SPM setup
-- **Task 1.2** — ClipboardItem and ClipboardItemContent data models
-- **Task 2.1** — PersistenceManager (JSON, atomic writes, graceful error handling)
-- **Task 3.1** — HistoryStore (add, delete, clear, recopy, search, 50-item cap)
-- **Task 4** — Domain layer checkpoint (diagnostics clean)
-- **Task 5.1** — ClipboardMonitor (pasteboard polling, self-write detection)
-- **Task 6.1** — StatusBarController (NSStatusItem + NSPopover)
-- **Task 6.2** — KeyboardShortcutManager (Cmd+Shift+V)
-- **Task 6.3** — AppDelegate (wires everything together)
-- **Task 7** — AppKit bridge checkpoint (diagnostics clean)
-- **Task 8.1** — ClipboardRowView (Liquid Glass styling)
-- **Task 8.2** — SearchBarView
-- **Task 8.3** — ClipboardListView (keyboard navigation)
-- **Task 8.4** — PopoverView (GlassEffectContainer, confirmation dialog)
-- **Task 9.1** — PopoverView wired to StatusBarController
-- **Task 9.2** — LaunchAtLoginManager (SMAppService)
-- **Task 10** — Final checkpoint (diagnostics clean)
+### Baseline (previous sessions)
+- 1.1 Project/SPM structure
+- 1.2 Data models
+- 2.1 PersistenceManager
+- 3.1 HistoryStore core
+- 4 Domain checkpoint
+- 5.1 ClipboardMonitor
+- 6.1 StatusBarController
+- 6.2 KeyboardShortcutManager (replaced in 19.3)
+- 6.3 AppDelegate
+- 7 AppKit checkpoint
+- 8.1–8.4 Row / Search / List / Popover views
+- 9.1 PopoverView wired to StatusBarController
+- 9.2 LaunchAtLoginManager
+- 10 Final checkpoint
 
-## What Was Skipped (Optional Tasks)
+### Extension (this pass)
+- 11.1 `.file([URL])` on ClipboardItemContent
+- 11.2 `isPinned` / `rtfData` / `htmlData` / `ocrText` on ClipboardItem
+- 12.1 PreferencesStore
+- 13.1 OCRService (Vision)
+- 13.2 OCRIndex
+- 14.1 ContentTypeExtractor
+- 15.1 SyntaxHighlighter protocol
+- 15.2 PlainMonospaceHighlighter
+- 15.3 CodeDetector
+- 15.5 Splash/Sourceful deferral note
+- 16 Domain additions checkpoint
+- 17.1–17.7 HistoryStore extended (smart dedup, pin, cap, expiry, applyOCR, recopy-with-format)
+- 18.1 Monitor rewired to ContentTypeExtractor
+- 18.2 Monitor fires async OCR
+- 19.1 KeyboardShortcuts package added
+- 19.2 KeyboardShortcuts registered in AppDelegate
+- 19.3 Hand-rolled KeyboardShortcutManager deleted
+- 20.1 AutoPasteService
+- 20.2 StatusBarController captures previous app on show
+- 20.3 Cmd+1…Cmd+9 quick paste handler
+- 21.1 Row extended (file rendering, pin indicator, drag, context menu)
+- 21.2 Preview state lifted from row to list (unified Space + Force Touch)
+- 21.3 Preview extended (file, rich text, code, OCR disclosure)
+- 21.4 Arrow-key suspension while preview open
+- 21.5 Popover behavior flip during drag
+- 22.1 PreferencesView
+- 22.2 Settings scene renders PreferencesView
+- 23.1–23.5 Full AppDelegate wiring
+- 24 Final checkpoint
 
-These are all marked with `*` in `tasks.md` and can be done in a follow-up session:
+## What Was Skipped (Optional Tasks, marked `- [ ]*`)
 
-### Property-Based Tests (SwiftCheck)
-- **Task 1.3** — Serialization round-trip property test
-- **Task 1.4** — Text preview truncation property test
-- **Task 3.2** — Content prepend property test
-- **Task 3.3** — Duplicate discard property test
-- **Task 3.4** — Newest-first ordering property test
-- **Task 3.5** — Re-copy preserves history property test
-- **Task 3.6** — Delete removes exactly one item property test
-- **Task 3.7** — History cap with eviction property test
-- **Task 3.8** — Search filter correctness property test
+All optional property-based and unit test tasks are still skipped. Run them as follow-up when you want the formal correctness coverage:
 
-### Unit Tests
-- **Task 2.2** — PersistenceManager unit tests
-- **Task 5.2** — ClipboardMonitor unit tests
-- **Task 8.5** — SwiftUI view unit tests
-
-### Integration Tests
-- **Task 9.3** — Integration tests (persistence round-trip, keyboard shortcut, launch-at-login)
+- 1.3 Property 8 — **done** (committed separately, uses SwiftCheck)
+- 1.4 Property 4 — Text preview truncation
+- 2.2 PersistenceManager unit tests
+- 3.2–3.8 Properties 1, 2, 3, 5, 6, 7, 9
+- 5.2 ClipboardMonitor unit tests
+- 8.5 SwiftUI view unit tests
+- 9.3 Integration tests (done in earlier session)
+- 11.3 Backward-compat decoding unit test
+- 11.4 textPreview case tests
+- 12.2 PreferencesStore unit tests
+- 13.3 OCRService unit tests
+- 13.4 Property 13 — OCR idempotence
+- 14.2 ContentTypeExtractor unit tests
+- 15.4 CodeDetector unit tests
+- 17.8 Property 10 — Smart dedup invariant
+- 17.9 Property 11 — Pin exempts from cap
+- 17.10 Property 12 — Pin exempts from age expiry
+- 17.11 Property 14 — Rich-preserving re-copy round-trip
+- 17.12 Property 15 — File item URL round-trip
+- 17.13 Property 16 — Search-with-OCR soundness
+- 17.14 HistoryStore unit tests
+- 18.3 ClipboardMonitor unit tests (rewired)
+- 19.4 KeyboardShortcuts integration test
+- 20.4 Quick-paste + AutoPasteService unit tests
+- 21.6 View unit tests
+- 22.3 PreferencesView unit tests
+- 23.6 Full-launch integration test
 
 ## Known Risks / Things to Verify on Mac
 
-1. **Liquid Glass APIs** — `.glassEffect()`, `GlassEffectContainer`, and `.glassEffect(.regular.interactive())` are macOS 26 APIs. If the SDK isn't available, these will fail to compile. The fix is to install Xcode 26 beta.
+1. **macOS 26 APIs** — `glassEffect`, `GlassEffectContainer`, `.buttonStyle(.glass)`, `.onKeyPress(phases:)`, `ScrollViewReader.scrollTo(..., anchor: .center)` all require the macOS 26 SDK. Older SDKs will fail. Confirm Xcode 26 beta.
 
-2. **Swift 6 concurrency** — Package.swift uses swift-tools-version 6.1. If you hit Sendable or actor isolation warnings, you may need to add `@MainActor` annotations or adjust concurrency settings.
+2. **Swift 6 concurrency** — `@MainActor` is used on `PreferencesStore`, `AutoPasteService`, `StatusBarController`, `PreferencesView`, `PopoverView`. `MainActor.assumeIsolated` is used in `AppDelegate` and `CopyCatApp` to touch main-actor state from NS-isolated contexts. If any warnings fire, they should be additive `@MainActor` annotations.
 
-3. **SwiftCheck dependency** — The test target depends on `SwiftCheck 0.12.0+`. If it fails to resolve, check that the GitHub URL is reachable: `https://github.com/typelift/SwiftCheck.git`
+3. **`HistoryCap` picker binding** — The Preferences UI uses a local enum (`HistoryCapChoice`) with a custom-text buffer. If you select "Custom" and the text field is empty, the store falls back to `.finite(50)` until a positive integer is typed. If this feels jarring, the fallback can be changed to "preserve the current cap".
 
-4. **`.onKeyPress` availability** — `ClipboardListView` uses `.onKeyPress(.upArrow)` etc., which requires macOS 14+. This should be fine given the macOS 26 target.
+4. **Drag-out end detection** — We use `NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp)` to detect the end of a drag (SwiftUI's `.onDrag` has no end callback). If a drag is released on another app, the monitor may not fire. If that happens, a secondary safety net: a timer that resets `isDragInFlight` after ~5 seconds.
 
-5. **NSPasteboard in tests** — `HistoryStoreTests` includes a `recopy` test that doesn't actually write to the pasteboard (it uses a mock). But `ClipboardMonitor` tests (if written) will need pasteboard access.
+5. **`NSItemProvider` multi-file drag** — A single provider drags only the first file. Dragging multiple files as a group requires multiple providers, which SwiftUI's `.onDrag { NSItemProvider }` doesn't support directly. Use `.draggable` or register multiple types if needed.
+
+6. **Auto-paste Accessibility** — First enable of "Auto-paste after Cmd+1…Cmd+9" will prompt the user for Accessibility permission. When denied, the re-copy still succeeds but the synthetic Cmd+V is skipped. A one-per-session banner is hooked via `AutoPasteService.onAccessibilityDenied` but not wired to a visual element yet — add a `.alert` in `PopoverView` or a system notification if you want the feedback surfaced.
+
+7. **`KeyboardShortcuts` recorder** — Conflict detection is the library's responsibility. Reserved system shortcuts are rejected at the recorder level. If a specific combination isn't behaving the way you want, consult the library's docs.
+
+8. **OCR timing** — `OCRService.recognize(imageData:)` runs off the main actor. For small screenshots it typically finishes in ~50–150 ms, but the first invocation in a session may take longer as Vision loads its models. The UI doesn't block on it — the OCR text populates lazily and the row updates via `@Observable`.
+
+9. **`history.json` backward compatibility** — All new `ClipboardItem` fields decode via `decodeIfPresent`, so an existing `history.json` on your Mac should load cleanly. If decoding fails for individual items, they're skipped.
+
+10. **Smart dedup and createdAt** — Promoting an existing non-pinned item to the top updates its `createdAt`. This means a smart-dedup match refreshes the age-expiry clock, which is intentional (users typically expect recent activity to "save" an item from expiry).
 
 ## Next Session Instructions
 
-To pick up where we left off, ask Kiro to:
+Three useful directions:
 
-> Run the optional tasks for the clipboard-manager spec. Start by building the project with `swift build` to verify everything compiles, then implement the skipped property-based tests and unit tests.
+1. **Verify on macOS** — `swift build`, `swift test`, launch the app, test:
+   - Copy text from multiple IDEs and check rich preview in Cmd+Shift+V
+   - Copy a screenshot and confirm OCR populates after a moment
+   - Copy a file in Finder and see it appear as a file item
+   - Pin items and confirm they survive a new copy that would normally evict them
+   - Drag a row into another app
+   - Open Preferences, change the shortcut via the Recorder, change the cap, toggle auto-paste
 
-The spec files are at `.kiro/specs/clipboard-manager/` — requirements.md, design.md, and tasks.md have full details on every task and correctness property.
+2. **Run the optional test tasks** — ask Kiro to implement tasks 11.3, 11.4, 12.2, 13.3, 14.2, 15.4, 17.8–17.14, 18.3, 20.4 (and the rest). The property tests use SwiftCheck and live in `Tests/CopyCatTests/`.
+
+3. **Pick a syntax highlighter** — either Splash or Sourceful. Add the package to `Package.swift`, create `SplashSyntaxHighlighter.swift` or `SourcefulSyntaxHighlighter.swift` in `Sources/CopyCat/Domain/`, conform to `SyntaxHighlighter`, then inject an instance via `PopoverView(syntaxHighlighter:)` or `ClipboardItemPreview(syntaxHighlighter:)` from `AppDelegate`. No other code changes needed.
+
+Spec files at `.kiro/specs/clipboard-manager/` — `requirements.md`, `design.md`, `tasks.md`.

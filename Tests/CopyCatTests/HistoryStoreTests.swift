@@ -55,14 +55,18 @@ struct HistoryStoreAddItemTests {
         #expect(store.items.count == 1)
     }
 
-    @Test("addItem allows non-duplicate even if content exists elsewhere in history")
-    func addItemAllowsNonRecentDuplicate() {
+    @Test("addItem promotes existing non-recent match to top (smart dedup)")
+    func addItemPromotesNonRecentMatch() {
         let store = HistoryStore()
         store.addItem(.text("First"))
         store.addItem(.text("Second"))
-        store.addItem(.text("First")) // Not a duplicate of most recent ("Second")
-        #expect(store.items.count == 3)
+        store.addItem(.text("First")) // Existing non-pinned "First" is promoted.
+
+        // Smart dedup (Requirement 16): history count stays at 2, the matched
+        // item is moved to index 0, no new item is created.
+        #expect(store.items.count == 2)
         #expect(store.items[0].content == .text("First"))
+        #expect(store.items[1].content == .text("Second"))
     }
 
     @Test("addItem enforces 50-item cap by removing oldest")

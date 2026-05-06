@@ -1,7 +1,10 @@
 // ClipboardMonitor.swift
 // CopyCat
 //
-// Polls the system clipboard for new text and image content.
+// Polls the system clipboard for new content. Extraction is delegated to
+// `ContentTypeExtractor` (task 14) and image items fire an async OCR job
+// via `OCRService` (task 13), with the recognized text routed back to
+// `HistoryStore.applyOCR(_:to:)` on the main actor.
 
 import Foundation
 import AppKit
@@ -13,16 +16,15 @@ import os.log
 /// `changeCount` on a 0.5-second timer.
 ///
 /// When a change is detected and `ignoreSelfWrite` is `false`, the monitor
-/// reads the pasteboard for text or image content and invokes `onNewContent`.
-/// When `ignoreSelfWrite` is `true` (set before a re-copy operation), the
-/// next detected change resets the flag without creating an item.
+/// uses `ContentTypeExtractor.extract(from:)` to obtain the richest
+/// representation and invokes `onNewContent(_:)` synchronously. For image
+/// representations, the monitor additionally kicks off an asynchronous
+/// `OCRService.recognize(imageData:)` task and invokes `onOCRCompleted`
+/// with the resulting `(id, text)` tuple once recognition finishes.
 @Observable
 final class ClipboardMonitor: ClipboardWritable {
 
     // MARK: - Constants
-
-    /// Maximum image size in bytes (10 MB).
-    private static let maxImageSize = 10 * 1024 * 1024
 
     /// Polling interval in seconds.
     private static let pollingInterval: TimeInterval = 0.5
@@ -33,6 +35,17 @@ final class ClipboardMonitor: ClipboardWritable {
         subsystem: "com.copycat.app",
         category: "ClipboardMonitor"
     )
+
+    // MARK: - Dependencies
+
+    /// Extractor that reads the pasteboard and produces a representation.
+    @ObservationIgnored
+    private let extractor: ContentTypeExtractor.Type
+
+    /// Async text recognizer used for image items. Optional so older wiring
+    /// that does not care about OCR can pass `nil`.
+    @ObservationIgnored
+    private let ocrService: OCRService?
 
     // MARK: - Stored Properties
 
@@ -45,13 +58,31 @@ final class ClipboardMonitor: ClipboardWritable {
     /// When `true`, the next detected pasteboard change is ignored (self-write).
     private var ignoreSelfWrite: Bool = false
 
-    /// Callback invoked when new clipboard content is detected.
-    var onNewContent: ((ClipboardItemContent) -> Void)?
+    /// Callback invoked when new clipboard content is detected. The caller
+    /// should return the `UUID` of the `ClipboardItem` that was created or
+    /// promoted so the monitor can target any follow-up OCR update to the
+    /// correct row. `nil` means the representation was absorbed silently
+    /// (e.g. matched an existing pinned item with no other changes).
+    var onNewContent: ((ClipboardItemRepresentation) -> UUID?)?
+
+    /// Callback invoked when OCR completes for a previously-reported image
+    /// item. Fires on the main actor.
+    var onOCRCompleted: ((UUID, String) -> Void)?
 
     // MARK: - Initializer
 
-    init() {
-        lastChangeCount = NSPasteboard.general.changeCount
+    /// - Parameters:
+    ///   - extractor: Content-type extractor. Defaults to the shared
+    ///     `ContentTypeExtractor` enum; tests may inject a stub.
+    ///   - ocrService: Optional OCR service. When `nil`, image items are
+    ///     stored without recognized text.
+    init(
+        extractor: ContentTypeExtractor.Type = ContentTypeExtractor.self,
+        ocrService: OCRService? = nil
+    ) {
+        self.extractor = extractor
+        self.ocrService = ocrService
+        self.lastChangeCount = NSPasteboard.general.changeCount
     }
 
     // MARK: - Public Methods
@@ -62,7 +93,6 @@ final class ClipboardMonitor: ClipboardWritable {
     /// 0.5 seconds. If monitoring is already active, this method is a no-op.
     func startMonitoring() {
         guard timer == nil else { return }
-
         timer = Timer.scheduledTimer(
             withTimeInterval: Self.pollingInterval,
             repeats: true
@@ -78,9 +108,6 @@ final class ClipboardMonitor: ClipboardWritable {
     }
 
     /// Signals the monitor to ignore the next detected pasteboard change.
-    ///
-    /// Called by `HistoryStore.recopy(_:writer:)` before writing content to
-    /// the pasteboard so the monitor does not create a duplicate item.
     func setIgnoreSelfWrite() {
         ignoreSelfWrite = true
     }
@@ -93,7 +120,6 @@ final class ClipboardMonitor: ClipboardWritable {
         let currentChangeCount = pasteboard.changeCount
 
         guard currentChangeCount != lastChangeCount else { return }
-
         lastChangeCount = currentChangeCount
 
         // If this change was initiated by a re-copy, skip it.
@@ -102,67 +128,23 @@ final class ClipboardMonitor: ClipboardWritable {
             return
         }
 
-        // Try to read content from the pasteboard.
-        if let content = readContent(from: pasteboard) {
-            onNewContent?(content)
-        }
-    }
+        // Use the extractor to obtain the richest available representation.
+        guard let representation = extractor.extract(from: pasteboard) else { return }
 
-    /// Attempts to read recognized content from the pasteboard.
-    ///
-    /// Checks for text first (`.string` type), then image types (`.tiff`,
-    /// `.png`). Returns `nil` if no recognized type is found or if the
-    /// image exceeds the 10 MB size limit.
-    private func readContent(from pasteboard: NSPasteboard) -> ClipboardItemContent? {
-        // Check for text content first.
-        if let text = pasteboard.string(forType: .string), !text.isEmpty {
-            return .text(text)
-        }
+        // Hand off to the store and capture the item id so OCR can target it.
+        let id = onNewContent?(representation)
 
-        // Check for image content (TIFF or PNG).
-        if let imageData = readImageData(from: pasteboard) {
-            return .image(imageData)
-        }
-
-        // No recognized content type.
-        return nil
-    }
-
-    /// Reads image data from the pasteboard and converts it to PNG.
-    ///
-    /// Supports `.tiff` and `.png` pasteboard types. TIFF data is converted
-    /// to PNG via `NSBitmapImageRep`. Returns `nil` if no image data is
-    /// found, conversion fails, or the resulting PNG exceeds 10 MB.
-    private func readImageData(from pasteboard: NSPasteboard) -> Data? {
-        // Try PNG first (no conversion needed).
-        if let pngData = pasteboard.data(forType: .png) {
-            if pngData.count > Self.maxImageSize {
-                Self.logger.warning("Skipping image: PNG data exceeds 10 MB (\(pngData.count) bytes)")
-                return nil
+        // Fire async OCR for image payloads when an OCR service is available
+        // and the store reported a target id.
+        if case .image(let data) = representation.payload,
+           let id,
+           let ocrService {
+            Task.detached { [weak self] in
+                let text = await ocrService.recognize(imageData: data)
+                await MainActor.run {
+                    self?.onOCRCompleted?(id, text)
+                }
             }
-            return pngData
         }
-
-        // Try TIFF and convert to PNG.
-        if let tiffData = pasteboard.data(forType: .tiff) {
-            guard let imageRep = NSBitmapImageRep(data: tiffData) else {
-                Self.logger.warning("Failed to create NSBitmapImageRep from TIFF data")
-                return nil
-            }
-
-            guard let pngData = imageRep.representation(using: .png, properties: [:]) else {
-                Self.logger.warning("Failed to convert NSBitmapImageRep to PNG representation")
-                return nil
-            }
-
-            if pngData.count > Self.maxImageSize {
-                Self.logger.warning("Skipping image: converted PNG data exceeds 10 MB (\(pngData.count) bytes)")
-                return nil
-            }
-
-            return pngData
-        }
-
-        return nil
     }
 }

@@ -120,13 +120,19 @@ final class PreferencesStore {
 
     /// Maximum number of non-pinned history items retained. Default: `.finite(50)`.
     var historyCap: HistoryCap = .finite(50) {
-        didSet { persistHistoryCap(historyCap) }
+        didSet {
+            persistHistoryCap(historyCap)
+            onHistoryCapChanged?(historyCap)
+        }
     }
 
     /// Age in days after which non-pinned items expire. `nil` disables expiry
     /// (default).
     var ageExpiryDays: Int? = nil {
-        didSet { persistAgeExpiryDays(ageExpiryDays) }
+        didSet {
+            persistAgeExpiryDays(ageExpiryDays)
+            onAgeExpiryDaysChanged?(ageExpiryDays)
+        }
     }
 
     /// Whether re-copy writes rich clipboard variants by default. Default: `.rich`.
@@ -145,6 +151,20 @@ final class PreferencesStore {
     var launchAtLogin: Bool = false {
         didSet { persistLaunchAtLogin(launchAtLogin) }
     }
+
+    // MARK: - Side-Effect Callbacks
+
+    /// Invoked whenever `historyCap` changes. `AppDelegate` wires this to
+    /// `HistoryStore.enforceCap(_:)` so the new cap takes effect immediately
+    /// without requiring a relaunch (Requirement 15.8).
+    @ObservationIgnored
+    var onHistoryCapChanged: ((HistoryCap) -> Void)?
+
+    /// Invoked whenever `ageExpiryDays` changes. `AppDelegate` wires this
+    /// to `HistoryStore.enforceAgeExpiry(days:)` when a positive day count
+    /// is set (Requirement 15.8).
+    @ObservationIgnored
+    var onAgeExpiryDaysChanged: ((Int?) -> Void)?
 
     // MARK: - Initialization
 
