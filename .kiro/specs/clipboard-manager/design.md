@@ -1,8 +1,8 @@
-# Design Document: CopyCat — Clipboard Manager
+# Design Document: Clipurr — Clipboard Manager
 
 ## Overview
 
-CopyCat is a native macOS 26 menu bar clipboard manager built with SwiftUI and the Liquid Glass design language. The app lives exclusively in the menu bar (no Dock icon), monitors the system clipboard for text, image, and file content, and presents a searchable, keyboard-navigable history popover styled with Liquid Glass effects.
+Clipurr is a native macOS 26 menu bar clipboard manager built with SwiftUI and the Liquid Glass design language. The app lives exclusively in the menu bar (no Dock icon), monitors the system clipboard for text, image, and file content, and presents a searchable, keyboard-navigable history popover styled with Liquid Glass effects.
 
 The baseline (Requirements 1–8) is already implemented. This design extends the existing shape with the following capabilities from Requirements 9–17 without replacing any core component:
 
@@ -32,7 +32,7 @@ flowchart TD
         VN[Vision Framework]
     end
 
-    subgraph CopyCat
+    subgraph Clipurr
         CM[ClipboardMonitor] -->|polls changeCount| PB
         CM -->|extract rich+plain+image+file| CTE[ContentTypeExtractor]
         CTE -->|representation| CM
@@ -73,7 +73,7 @@ flowchart TD
 | Apple Vision `VNRecognizeTextRequest` for OCR | On-device, no network, and already supports the languages required. Runs off the main actor on an async queue; results are written back on the main actor. |
 | Library-agnostic `SyntaxHighlighter` protocol | Requirement 10 leaves the concrete library open (Splash vs Sourceful). The design exposes a one-method protocol returning `NSAttributedString` so either library can plug in behind it without changing callers. |
 | One unified preview surface | Requirement 13 explicitly rejects a separate Quick Look panel. The existing `ClipboardItemPreview` shown in a `.popover` is the single `Detail_Preview`. Space and Force Touch both toggle the same `isShowingPreview` state on the row. |
-| Auto-paste via `CGEvent` with captured frontmost app | Quick-paste needs to paste into the user's previous app, not CopyCat. `NSWorkspace.shared.frontmostApplication` is snapshotted when the popover opens, then reactivated before synthesizing Cmd+V. Requires Accessibility trust, prompted via `AXIsProcessTrusted`. |
+| Auto-paste via `CGEvent` with captured frontmost app | Quick-paste needs to paste into the user's previous app, not Clipurr. `NSWorkspace.shared.frontmostApplication` is snapshotted when the popover opens, then reactivated before synthesizing Cmd+V. Requires Accessibility trust, prompted via `AXIsProcessTrusted`. |
 
 ## Architecture
 
@@ -286,7 +286,7 @@ protocol SyntaxHighlighter {
 }
 ```
 
-The concrete implementation is explicitly **not** chosen in this design. A `SplashSyntaxHighlighter` or `SourcefulSyntaxHighlighter` (or any other future option) can conform to this protocol in a single file added to `Sources/CopyCat/Domain`, and be injected into the views via a shared `SyntaxHighlighter` instance on `PreferencesStore` or `AppDelegate`. No view code should import the concrete library directly; callers depend only on the protocol.
+The concrete implementation is explicitly **not** chosen in this design. A `SplashSyntaxHighlighter` or `SourcefulSyntaxHighlighter` (or any other future option) can conform to this protocol in a single file added to `Sources/Clipurr/Domain`, and be injected into the views via a shared `SyntaxHighlighter` instance on `PreferencesStore` or `AppDelegate`. No view code should import the concrete library directly; callers depend only on the protocol.
 
 ### CodeDetector (new)
 
@@ -565,7 +565,7 @@ A `Settings` scene:
 
 ```swift
 @main
-struct CopyCatApp: App {
+struct ClipurrApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     var body: some Scene {
         Settings { PreferencesView(preferences: appDelegate.preferences,
@@ -605,7 +605,7 @@ Sections:
 
 ### Persistence Format
 
-The history is stored as a JSON array at `~/Library/Application Support/CopyCat/history.json`. The new fields are optional on decode so older files still load:
+The history is stored as a JSON array at `~/Library/Application Support/Clipurr/history.json`. The new fields are optional on decode so older files still load:
 
 ```json
 [
@@ -640,7 +640,7 @@ Decoding rules:
 
 ### Preferences Format
 
-Preferences are stored in `UserDefaults.standard` under the `com.copycat.app` suite:
+Preferences are stored in `UserDefaults.standard` under the `com.Clipurr.app` suite:
 
 | Key | Type | Default |
 |---|---|---|

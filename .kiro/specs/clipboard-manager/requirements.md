@@ -2,7 +2,7 @@
 
 ## Introduction
 
-CopyCat is a native macOS 26 menu bar clipboard manager built with SwiftUI and the Liquid Glass design language. The app provides a persistent menu bar icon (NSStatusItem) that opens a popover displaying clipboard history — text, image, and file items. Users can tap any saved item to re-copy it to the system clipboard without creating a duplicate entry in the history list. The app runs exclusively in the menu bar and does not appear in the Dock.
+Clipurr is a native macOS 26 menu bar clipboard manager built with SwiftUI and the Liquid Glass design language. The app provides a persistent menu bar icon (NSStatusItem) that opens a popover displaying clipboard history — text, image, and file items. Users can tap any saved item to re-copy it to the system clipboard without creating a duplicate entry in the history list. The app runs exclusively in the menu bar and does not appear in the Dock.
 
 Beyond the baseline clipboard behavior (Requirements 1–8), this document also specifies an extended feature set (Requirements 9–17): on-device OCR for images, rich/formatted content preservation and optional syntax highlighting for code, a user-customizable global shortcut with quick-paste number shortcuts, pinned items, Quick Look previews, drag-out support, configurable history size and age-based expiry, smart duplicate handling, and file URL support.
 
@@ -12,7 +12,7 @@ Beyond the baseline clipboard behavior (Requirements 1–8), this document also 
 
 ## Glossary
 
-- **App**: The CopyCat macOS 26 menu bar clipboard manager application
+- **App**: The Clipurr macOS 26 menu bar clipboard manager application
 - **Menu_Bar_Icon**: The persistent NSStatusItem icon displayed in the macOS menu bar that serves as the entry point to the App
 - **Popover**: The panel that appears when the user clicks the Menu_Bar_Icon, displaying the clipboard history
 - **Clipboard_History**: The ordered list of previously copied items maintained by the App
@@ -162,7 +162,7 @@ Beyond the baseline clipboard behavior (Requirements 1–8), this document also 
 
 ### Requirement 11: Customizable Global Shortcut and Quick Paste
 
-**User Story:** As a user, I want to change the global shortcut that opens the clipboard popover and to quickly re-copy the first nine items using number keys, so that I can make CopyCat fit my muscle memory and paste common items without clicking.
+**User Story:** As a user, I want to change the global shortcut that opens the clipboard popover and to quickly re-copy the first nine items using number keys, so that I can make Clipurr fit my muscle memory and paste common items without clicking.
 
 #### Acceptance Criteria
 

@@ -1,15 +1,15 @@
 // swift-tools-version: 6.2
-// CopyCat — macOS 26 Menu Bar Clipboard Manager
+// Clipurr — macOS 26 Menu Bar Clipboard Manager
 
 import PackageDescription
 
 let package = Package(
-    name: "CopyCat",
+    name: "Clipurr",
     platforms: [
         .macOS(.v26)  // Minimum deployment target; built for macOS 26
     ],
     products: [
-        .executable(name: "CopyCat", targets: ["CopyCat"])
+        .executable(name: "Clipurr", targets: ["Clipurr"])
     ],
     dependencies: [
         .package(url: "https://github.com/typelift/SwiftCheck.git", from: "0.12.0"),
@@ -17,19 +17,19 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "CopyCat",
+            name: "Clipurr",
             dependencies: [
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts")
             ],
-            path: "Sources/CopyCat"
+            path: "Sources/Clipurr"
         ),
         .testTarget(
-            name: "CopyCatTests",
+            name: "ClipurrTests",
             dependencies: [
-                "CopyCat",
+                "Clipurr",
                 "SwiftCheck"
             ],
-            path: "Tests/CopyCatTests"
+            path: "Tests/ClipurrTests"
         )
     ]
 )

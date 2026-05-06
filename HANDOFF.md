@@ -1,8 +1,8 @@
-# CopyCat — Handoff Notes
+# Clipurr — Handoff Notes
 
 ## What This Is
 
-CopyCat is a native macOS 26 menu bar clipboard manager built with SwiftUI and Liquid Glass styling. The baseline (Requirements 1–8) was shipped and verified on a Mac in a previous session. This pass scaffolded the extended feature set (Requirements 9–17) on Windows; it compiles clean in the language server, but `swift build` / `swift test` haven't run yet. **First action on the Mac: build and test.**
+Clipurr (formerly prototyped as "CopyCat" — renamed when that name turned out to be taken) is a native macOS 26 menu bar clipboard manager built with SwiftUI and Liquid Glass styling. The baseline (Requirements 1–8) was shipped and verified on a Mac in an earlier session. The extended feature set (Requirements 9–17) was scaffolded on Windows; it compiles clean in the language server, but `swift build` / `swift test` haven't run on the renamed tree yet. **First action on the Mac: build and test.**
 
 ## Getting Started on Mac
 
@@ -25,19 +25,29 @@ Package dependencies resolved by `swift build`:
 - `SwiftCheck` 0.12.0+ (test target only)
 - `KeyboardShortcuts` 2.2.0+ by Sindre Sorhus (main target; provides the customizable global shortcut + recorder UI)
 
+Note on the rename: the previous `CopyCat` folder/bundle names, bundle id (`com.copycat.app`), and Application Support directory (`~/Library/Application Support/CopyCat/`) are all now `Clipurr` / `com.clipurr.app` / `~/Library/Application Support/Clipurr/`. **Any old `history.json` under `~/Library/Application Support/CopyCat/` will not migrate automatically.** If you want to carry it forward, copy it manually:
+
+```bash
+mkdir -p ~/Library/Application\ Support/Clipurr
+cp ~/Library/Application\ Support/CopyCat/history.json \
+   ~/Library/Application\ Support/Clipurr/history.json
+```
+
+Preferences previously persisted under the default `UserDefaults` with `prefs.*` keys carry over unchanged (the keys don't include the app name). Shortcuts registered under the `KeyboardShortcuts.Name("togglePopover")` also carry over because the library keys on the name string rather than the bundle id. You may still want to re-grant Accessibility permission if you enabled auto-paste before.
+
 ## Project Structure
 
 ```
-CopyCat/
+Clipurr/
 ├── Package.swift                           # SPM (swift-tools-version: 6.2, macOS 26)
-├── Sources/CopyCat/
-│   ├── CopyCatApp.swift                    # @main + Settings scene → PreferencesView
-│   ├── Info.plist                          # LSUIElement = true
+├── Sources/Clipurr/
+│   ├── ClipurrApp.swift                    # @main + Settings scene → PreferencesView
+│   ├── Info.plist                          # LSUIElement = true, com.clipurr.app
 │   ├── Models/
 │   │   └── ClipboardItem.swift             # .text/.image/.file + isPinned/rtfData/htmlData/ocrText
 │   ├── Domain/
 │   │   ├── HistoryStore.swift              # smart dedup, pins, cap/expiry, OCR, rich recopy
-│   │   ├── PersistenceManager.swift        # atomic JSON writes
+│   │   ├── PersistenceManager.swift        # atomic JSON writes → ~/Library/Application Support/Clipurr/
 │   │   ├── ClipboardMonitor.swift          # polling + ContentTypeExtractor + OCR
 │   │   ├── ContentTypeExtractor.swift      # file > text+rich > image priority
 │   │   ├── OCRService.swift                # actor over VNRecognizeTextRequest
@@ -58,63 +68,16 @@ CopyCat/
 │       ├── ClipboardRowView.swift          # pin indicator, .onDrag, context menu
 │       ├── ClipboardItemPreview.swift      # rich/code/OCR/file branches
 │       └── PreferencesView.swift           # Settings form (General/Shortcuts/History/Quick Paste)
-└── Tests/CopyCatTests/
+└── Tests/ClipurrTests/
     ├── ClipboardItemTests.swift            # Codable round-trip, textPreview
     ├── ClipboardItemSerializationPropertyTests.swift  # Property 8 (SwiftCheck)
     ├── HistoryStoreTests.swift             # addItem, delete, clear, recopy, filter
-    └── CopyCatTests.swift                  # placeholder
+    └── ClipurrTests.swift                  # placeholder
 ```
 
 ## What Was Completed (Required Tasks)
 
-All required tasks from `tasks.md` are marked complete — tasks 1–10 from the original pass and tasks 11–24 from this pass. Full list:
-
-### Baseline (previous sessions)
-- 1.1 Project/SPM structure
-- 1.2 Data models
-- 2.1 PersistenceManager
-- 3.1 HistoryStore core
-- 4 Domain checkpoint
-- 5.1 ClipboardMonitor
-- 6.1 StatusBarController
-- 6.2 KeyboardShortcutManager (replaced in 19.3)
-- 6.3 AppDelegate
-- 7 AppKit checkpoint
-- 8.1–8.4 Row / Search / List / Popover views
-- 9.1 PopoverView wired to StatusBarController
-- 9.2 LaunchAtLoginManager
-- 10 Final checkpoint
-
-### Extension (this pass)
-- 11.1 `.file([URL])` on ClipboardItemContent
-- 11.2 `isPinned` / `rtfData` / `htmlData` / `ocrText` on ClipboardItem
-- 12.1 PreferencesStore
-- 13.1 OCRService (Vision)
-- 13.2 OCRIndex
-- 14.1 ContentTypeExtractor
-- 15.1 SyntaxHighlighter protocol
-- 15.2 PlainMonospaceHighlighter
-- 15.3 CodeDetector
-- 15.5 Splash/Sourceful deferral note
-- 16 Domain additions checkpoint
-- 17.1–17.7 HistoryStore extended (smart dedup, pin, cap, expiry, applyOCR, recopy-with-format)
-- 18.1 Monitor rewired to ContentTypeExtractor
-- 18.2 Monitor fires async OCR
-- 19.1 KeyboardShortcuts package added
-- 19.2 KeyboardShortcuts registered in AppDelegate
-- 19.3 Hand-rolled KeyboardShortcutManager deleted
-- 20.1 AutoPasteService
-- 20.2 StatusBarController captures previous app on show
-- 20.3 Cmd+1…Cmd+9 quick paste handler
-- 21.1 Row extended (file rendering, pin indicator, drag, context menu)
-- 21.2 Preview state lifted from row to list (unified Space + Force Touch)
-- 21.3 Preview extended (file, rich text, code, OCR disclosure)
-- 21.4 Arrow-key suspension while preview open
-- 21.5 Popover behavior flip during drag
-- 22.1 PreferencesView
-- 22.2 Settings scene renders PreferencesView
-- 23.1–23.5 Full AppDelegate wiring
-- 24 Final checkpoint
+All required tasks from `tasks.md` are marked complete — tasks 1–10 from the original pass and tasks 11–24 from the extension pass. Spec docs (`requirements.md`, `design.md`, `tasks.md`) have been updated to use the new name.
 
 ## What Was Skipped (Optional Tasks, marked `- [ ]*`)
 
@@ -152,7 +115,7 @@ All optional property-based and unit test tasks are still skipped. Run them as f
 
 1. **macOS 26 APIs** — `glassEffect`, `GlassEffectContainer`, `.buttonStyle(.glass)`, `.onKeyPress(phases:)`, `ScrollViewReader.scrollTo(..., anchor: .center)` all require the macOS 26 SDK. Older SDKs will fail. Confirm Xcode 26 beta.
 
-2. **Swift 6 concurrency** — `@MainActor` is used on `PreferencesStore`, `AutoPasteService`, `StatusBarController`, `PreferencesView`, `PopoverView`. `MainActor.assumeIsolated` is used in `AppDelegate` and `CopyCatApp` to touch main-actor state from NS-isolated contexts. If any warnings fire, they should be additive `@MainActor` annotations.
+2. **Swift 6 concurrency** — `@MainActor` is used on `PreferencesStore`, `AutoPasteService`, `StatusBarController`, `PreferencesView`, `PopoverView`. `MainActor.assumeIsolated` is used in `AppDelegate` and `ClipurrApp` to touch main-actor state from NS-isolated contexts. If any warnings fire, they should be additive `@MainActor` annotations.
 
 3. **`HistoryCap` picker binding** — The Preferences UI uses a local enum (`HistoryCapChoice`) with a custom-text buffer. If you select "Custom" and the text field is empty, the store falls back to `.finite(50)` until a positive integer is typed. If this feels jarring, the fallback can be changed to "preserve the current cap".
 
@@ -162,28 +125,28 @@ All optional property-based and unit test tasks are still skipped. Run them as f
 
 6. **Auto-paste Accessibility** — First enable of "Auto-paste after Cmd+1…Cmd+9" will prompt the user for Accessibility permission. When denied, the re-copy still succeeds but the synthetic Cmd+V is skipped. A one-per-session banner is hooked via `AutoPasteService.onAccessibilityDenied` but not wired to a visual element yet — add a `.alert` in `PopoverView` or a system notification if you want the feedback surfaced.
 
-7. **`KeyboardShortcuts` recorder** — Conflict detection is the library's responsibility. Reserved system shortcuts are rejected at the recorder level. If a specific combination isn't behaving the way you want, consult the library's docs.
+7. **`KeyboardShortcuts` recorder** — Conflict detection is the library's responsibility. Reserved system shortcuts are rejected at the recorder level.
 
-8. **OCR timing** — `OCRService.recognize(imageData:)` runs off the main actor. For small screenshots it typically finishes in ~50–150 ms, but the first invocation in a session may take longer as Vision loads its models. The UI doesn't block on it — the OCR text populates lazily and the row updates via `@Observable`.
+8. **OCR timing** — `OCRService.recognize(imageData:)` runs off the main actor. For small screenshots it typically finishes in ~50–150 ms, but the first invocation in a session may take longer as Vision loads its models. The UI doesn't block on it.
 
-9. **`history.json` backward compatibility** — All new `ClipboardItem` fields decode via `decodeIfPresent`, so an existing `history.json` on your Mac should load cleanly. If decoding fails for individual items, they're skipped.
+9. **`history.json` backward compatibility** — All new `ClipboardItem` fields decode via `decodeIfPresent`, so an existing `history.json` copied from the old `CopyCat` folder should load cleanly. See the copy command at the top if you want to carry history forward.
 
-10. **Smart dedup and createdAt** — Promoting an existing non-pinned item to the top updates its `createdAt`. This means a smart-dedup match refreshes the age-expiry clock, which is intentional (users typically expect recent activity to "save" an item from expiry).
+10. **Smart dedup and createdAt** — Promoting an existing non-pinned item to the top updates its `createdAt`. This means a smart-dedup match refreshes the age-expiry clock, which is intentional.
 
 ## Next Session Instructions
 
 Three useful directions:
 
 1. **Verify on macOS** — `swift build`, `swift test`, launch the app, test:
-   - Copy text from multiple IDEs and check rich preview in Cmd+Shift+V
+   - Copy text from multiple IDEs and check rich preview
    - Copy a screenshot and confirm OCR populates after a moment
    - Copy a file in Finder and see it appear as a file item
    - Pin items and confirm they survive a new copy that would normally evict them
    - Drag a row into another app
    - Open Preferences, change the shortcut via the Recorder, change the cap, toggle auto-paste
 
-2. **Run the optional test tasks** — ask Kiro to implement tasks 11.3, 11.4, 12.2, 13.3, 14.2, 15.4, 17.8–17.14, 18.3, 20.4 (and the rest). The property tests use SwiftCheck and live in `Tests/CopyCatTests/`.
+2. **Run the optional test tasks** — ask Kiro to implement tasks 11.3, 11.4, 12.2, 13.3, 14.2, 15.4, 17.8–17.14, 18.3, 20.4. The property tests use SwiftCheck and live in `Tests/ClipurrTests/`.
 
-3. **Pick a syntax highlighter** — either Splash or Sourceful. Add the package to `Package.swift`, create `SplashSyntaxHighlighter.swift` or `SourcefulSyntaxHighlighter.swift` in `Sources/CopyCat/Domain/`, conform to `SyntaxHighlighter`, then inject an instance via `PopoverView(syntaxHighlighter:)` or `ClipboardItemPreview(syntaxHighlighter:)` from `AppDelegate`. No other code changes needed.
+3. **Pick a syntax highlighter** — either Splash or Sourceful. Add the package to `Package.swift`, create `SplashSyntaxHighlighter.swift` or `SourcefulSyntaxHighlighter.swift` in `Sources/Clipurr/Domain/`, conform to `SyntaxHighlighter`, then inject an instance via `PopoverView(syntaxHighlighter:)` or `ClipboardItemPreview(syntaxHighlighter:)` from `AppDelegate`. No other code changes needed.
 
-Spec files at `.kiro/specs/clipboard-manager/` — `requirements.md`, `design.md`, `tasks.md`.
+Spec files at `.kiro/specs/clipboard-manager/` — `requirements.md`, `design.md`, `tasks.md`. The spec directory is still named `clipboard-manager` (a neutral feature name), which is fine; only the product name changed.
