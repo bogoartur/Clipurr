@@ -1,4 +1,4 @@
-// swift-tools-version: 6.1
+// swift-tools-version: 6.2
 // CopyCat — macOS 26 Menu Bar Clipboard Manager
 
 import PackageDescription
@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "CopyCat",
     platforms: [
-        .macOS(.v15)  // Minimum deployment target; built for macOS 26
+        .macOS(.v26)  // Minimum deployment target; built for macOS 26
     ],
     products: [
         .executable(name: "CopyCat", targets: ["CopyCat"])
@@ -17,10 +17,7 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "CopyCat",
-            path: "Sources/CopyCat",
-            resources: [
-                .copy("Info.plist")
-            ]
+            path: "Sources/CopyCat"
         ),
         .testTarget(
             name: "CopyCatTests",

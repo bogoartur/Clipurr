@@ -79,26 +79,26 @@ struct ClipboardListView: View {
     private var itemList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 2) {
+                LazyVStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         ClipboardRowView(
                             item: item,
                             isFocused: focusedIndex == index,
+                            onSelect: { onSelect(item) },
                             onDelete: { onDelete(item) }
                         )
-                        .id(index)
+                        .id(item.id)
                         .focused($focusedIndex, equals: index)
-                        .onTapGesture {
-                            onSelect(item)
-                        }
                     }
                 }
+                .padding(.horizontal, 6)
                 .padding(.vertical, 4)
             }
+            .scrollContentBackground(.hidden)
             .onChange(of: focusedIndex) { _, newIndex in
-                if let newIndex {
+                if let newIndex, newIndex >= 0, newIndex < items.count {
                     withAnimation {
-                        proxy.scrollTo(newIndex, anchor: .center)
+                        proxy.scrollTo(items[newIndex].id, anchor: .center)
                     }
                 }
             }

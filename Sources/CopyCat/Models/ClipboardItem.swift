@@ -52,16 +52,29 @@ struct ClipboardItem: Identifiable, Codable, Equatable {
 
     /// A short text preview suitable for display in the history list.
     ///
-    /// For text items, returns the text truncated to 80 characters with a trailing
-    /// ellipsis (`…`) when the original exceeds 80 characters. For image items,
-    /// returns `"[Image]"`.
+    /// For text items, strips leading whitespace and newlines (so a code
+    /// snippet that begins with a blank line still shows meaningful content),
+    /// then returns the first line truncated to 80 characters with a trailing
+    /// ellipsis (`…`) when content is longer or spans multiple lines.
+    /// For image items, returns `"[Image]"`.
     var textPreview: String {
         switch content {
         case .text(let string):
-            if string.count > 80 {
-                return String(string.prefix(79)) + "…"
+            let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return string }
+
+            // Collapse to the first non-empty line for the list preview.
+            let firstLine = trimmed
+                .split(whereSeparator: \.isNewline)
+                .first
+                .map(String.init) ?? trimmed
+
+            let hasMoreContent = firstLine.count < trimmed.count
+
+            if firstLine.count > 80 {
+                return String(firstLine.prefix(79)) + "…"
             }
-            return string
+            return hasMoreContent ? firstLine + "…" : firstLine
         case .image:
             return "[Image]"
         }

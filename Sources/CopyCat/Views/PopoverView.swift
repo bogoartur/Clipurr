@@ -33,8 +33,9 @@ struct PopoverView: View {
                     searchQuery: $store.searchQuery,
                     matchCount: store.matchCount
                 )
-
-                Divider()
+                .padding(.horizontal, 10)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
 
                 // Clipboard history list
                 ClipboardListView(
@@ -48,13 +49,11 @@ struct PopoverView: View {
                     onDismiss: onDismiss
                 )
 
-                Divider()
-
-                // Clear All button at the bottom
-                clearAllButton
+                // Footer toolbar
+                footerBar
             }
         }
-        .frame(width: 320, height: 480)
+        .frame(width: 340, height: 500)
         .confirmationDialog(
             "Clear Clipboard History",
             isPresented: $showClearConfirmation,
@@ -69,25 +68,37 @@ struct PopoverView: View {
         }
     }
 
-    // MARK: - Clear All Button
+    // MARK: - Footer Bar
 
-    private var clearAllButton: some View {
-        Button {
-            showClearConfirmation = true
-        } label: {
-            HStack {
-                Image(systemName: "trash")
-                Text("Clear All")
+    private var footerBar: some View {
+        HStack {
+            Text(itemCountLabel)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+            Spacer()
+
+            Button {
+                showClearConfirmation = true
+            } label: {
+                Label("Clear", systemImage: "trash")
+                    .font(.system(size: 12, weight: .medium))
+                    .labelStyle(.titleAndIcon)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .buttonStyle(.glass)
+            .controlSize(.small)
+            .disabled(store.items.isEmpty)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.red)
         .padding(.horizontal, 12)
-        .padding(.vertical, 4)
-        .disabled(store.items.isEmpty)
-        .opacity(store.items.isEmpty ? 0.4 : 1.0)
+        .padding(.vertical, 8)
+    }
+
+    private var itemCountLabel: String {
+        let count = store.items.count
+        if count == 0 { return "No items" }
+        if count == 1 { return "1 item" }
+        return "\(count) items"
     }
 
     // MARK: - Re-copy with Highlight Feedback

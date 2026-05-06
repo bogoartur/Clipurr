@@ -8,6 +8,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 final class StatusBarController {
 
     // MARK: - Properties
