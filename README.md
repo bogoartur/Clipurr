@@ -14,7 +14,7 @@ Clipboard capture → deduplication and local JSON storage → search (including
 
 ## Build from source
 
-Requires **macOS 26, Swift 6.2 and full Xcode 26 with the macOS 26 SDK**. Command Line Tools alone are insufficient for the current dependencies.
+Requires **macOS 26, Swift 6.2 and full Xcode 26 or newer with a compatible macOS SDK**. Command Line Tools alone are insufficient for the current dependencies.
 
 ```sh
 git clone --branch feat/clipboard-manager-implementation https://github.com/bogoartur/Clipurr.git
@@ -24,11 +24,20 @@ swift test
 swift run Clipurr
 ```
 
-On October 3, 2026, dependency resolution completed, but `swift build` stopped in KeyboardShortcuts because the Command Line Tools installation lacks `PreviewsMacros`; `swift test` stopped because XCTest is unavailable. App launch and end-to-end behavior remain unverified in this pass. No signed release is published.
+Verified on October 3, 2026 with full Xcode: debug/release builds, 36 Swift Testing tests, and the XCTest serialization property test pass. Coverage includes rich/plain re-copy on a private pasteboard, pin retention, persistence and real Apple Vision OCR. A temporary app bundle was launched and image search was verified in the native interface. No signed release is published.
+
+For synthetic sample content without monitoring the system clipboard:
+
+```sh
+swift run Clipurr --demo
+```
+
+Demo history uses a separate temporary directory. `CLIPURR_DATA_DIRECTORY` can also select a disposable storage directory for tests. Demo mode still permits manual re-copy; avoid clicking items if you want to preserve the system clipboard.
+
 
 ## Storage and permissions
 
-History is written to `~/Library/Application Support/Clipurr/history.json`; OCR uses Apple Vision. The app does not encrypt the history file. There are no per-app exclusions or secret-detection filters. Optional auto-paste uses Accessibility permission to send Cmd+V. Launch-at-login and packaged-app behavior still need verification with a proper app bundle.
+History is written to `~/Library/Application Support/Clipurr/history.json`; OCR uses Apple Vision. The app does not encrypt the history file. There are no per-app exclusions or secret-detection filters. Optional auto-paste uses Accessibility permission to send Cmd+V. Launch-at-login and auto-paste still need end-to-end verification; they were not enabled during the demo.
 
 ## Source map
 
@@ -39,6 +48,6 @@ History is written to `~/Library/Application Support/Clipurr/history.json`; OCR 
 
 ## Em português
 
-Utilitário nativo de histórico da área de transferência para macOS 26. Captura textos, imagens e referências de arquivos, com busca, OCR local, deduplicação e itens fixados. O código está na branch de implementação acima. Projeto em desenvolvimento: build, testes e comportamento completo precisam ser verificados com Xcode 26 antes de uma versão pública.
+Utilitário nativo de histórico da área de transferência para macOS 26. Captura textos, imagens e referências de arquivos, com busca, OCR local, deduplicação e itens fixados. O código está na branch de implementação acima. Projeto em desenvolvimento: build e testes passaram com Xcode completo, e a busca por OCR foi verificada no app nativo. Ainda não há versão assinada publicada.
 
 [Portfolio](https://www.arturbogo.dev/) · [Artur Bogo](https://www.linkedin.com/in/arturbogo/)
