@@ -1,19 +1,36 @@
-# 🐾 CopyCat
+# Clipurr
 
-CopyCat is a personal, lightweight clipboard manager built specifically for macOS. It runs quietly in the background, keeping an easily accessible history of your copied text and images so you never lose track of your recent snippets. 
+A native macOS clipboard-history utility built with SwiftUI and AppKit.
 
-[Inference] Since you mentioned the app is specifically for your own use, I highlighted privacy and local storage as key features in the list below.
+**[Open the implementation and source code](https://github.com/bogoartur/Clipurr/tree/feat/clipboard-manager-implementation)** - the implementation is currently on `feat/clipboard-manager-implementation`; `main` is this landing page.
 
-## Features
-* **Text & Image History:** Seamlessly stores and retrieves copied text snippets and images.
-* **Mac-Native Workflow:** Designed specifically for macOS.
-* **Local & Private:** 100% self-use and locally hosted. Your clipboard data never leaves your machine.
-* *[Future Feature]: Possible support for file copying and management.*
+## What is implemented
 
-## Getting Started
+- Text, image and file-reference capture from the system clipboard.
+- Search across text and image text recognized with Apple Vision.
+- Deduplication, pinned items, configurable history limits and optional age expiry.
+- Rich/plain re-copy, a customizable shortcut and optional quick-paste.
 
-[Inference] Assuming you are building this using standard Apple developer tools, these instructions are formatted for a typical Xcode project.
+## Build from source
 
-1. Clone the repository to your local machine.
-2. Open the project in Xcode.
-3. Build and run the project. 
+Requires macOS 26 and a Swift 6.2 toolchain with the macOS 26 SDK. Full Xcode is required for XCTest-based tests.
+
+```sh
+git clone --branch feat/clipboard-manager-implementation https://github.com/bogoartur/Clipurr.git
+cd Clipurr
+swift build
+swift test
+swift run Clipurr
+```
+
+Build verification is still in progress. On October 3, 2026, the test attempt with Command Line Tools stopped because XCTest was unavailable. No signed release or verified app preview is available yet.
+
+## Storage and permissions
+
+History is written locally to `~/Library/Application Support/Clipurr/history.json`. OCR uses Apple Vision. The JSON history is not encrypted by the app; local storage is not protection against another process with access to that file. No per-app exclusions or secret detection are implemented. Pinned items survive automatic cap/age eviction, but can still be explicitly deleted. Optional auto-paste requires Accessibility permission.
+
+## Em português
+
+Utilitário nativo de histórico da área de transferência para macOS. O código está na branch de implementação acima: captura textos, imagens e referências de arquivos, com busca, OCR local, favoritos e limites de retenção. Projeto em desenvolvimento, sem versão assinada publicada.
+
+[Portfolio](https://www.arturbogo.dev/) · [Artur Bogo](https://www.linkedin.com/in/arturbogo/)
