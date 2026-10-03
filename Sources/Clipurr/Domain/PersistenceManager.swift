@@ -18,6 +18,12 @@ struct PersistenceManager {
 
     /// The directory where Clipurr stores its data.
     static let directoryURL: URL = {
+        if let directory = ProcessInfo.processInfo.environment["CLIPURR_DATA_DIRECTORY"] {
+            return URL(fileURLWithPath: directory, isDirectory: true)
+        }
+        if ProcessInfo.processInfo.arguments.contains("--demo") || Bundle.main.object(forInfoDictionaryKey: "ClipurrDemoMode") as? Bool == true {
+            return FileManager.default.temporaryDirectory.appendingPathComponent("Clipurr-Demo-" + UUID().uuidString, isDirectory: true)
+        }
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask

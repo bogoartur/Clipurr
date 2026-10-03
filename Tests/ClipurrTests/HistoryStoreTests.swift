@@ -1,10 +1,12 @@
 import Testing
 import Foundation
+import AppKit
 @testable import Clipurr
 
 // MARK: - Mock ClipboardWritable
 
 /// A test double that records whether `setIgnoreSelfWrite()` was called.
+@MainActor
 final class MockClipboardWriter: ClipboardWritable {
     var ignoreSelfWriteCalled = false
 
@@ -27,6 +29,7 @@ private func imageItem(_ data: Data = Data([0x89, 0x50, 0x4E, 0x47]), date: Date
 
 // MARK: - Tests
 
+@MainActor
 @Suite("HistoryStore — addItem")
 struct HistoryStoreAddItemTests {
 
@@ -96,6 +99,7 @@ struct HistoryStoreAddItemTests {
     }
 }
 
+@MainActor
 @Suite("HistoryStore — deleteItem")
 struct HistoryStoreDeleteItemTests {
 
@@ -122,6 +126,7 @@ struct HistoryStoreDeleteItemTests {
     }
 }
 
+@MainActor
 @Suite("HistoryStore — clearAll")
 struct HistoryStoreClearAllTests {
 
@@ -145,6 +150,7 @@ struct HistoryStoreClearAllTests {
     }
 }
 
+@MainActor
 @Suite("HistoryStore — recopy")
 struct HistoryStoreRecopyTests {
 
@@ -156,7 +162,7 @@ struct HistoryStoreRecopyTests {
 
         let itemsBefore = store.items
         let writer = MockClipboardWriter()
-        store.recopy(store.items[1], writer: writer)
+        store.recopy(store.items[1], writer: writer, pasteboard: NSPasteboard.withUniqueName())
 
         #expect(store.items == itemsBefore)
     }
@@ -167,12 +173,13 @@ struct HistoryStoreRecopyTests {
         store.addItem(.text("Test"))
 
         let writer = MockClipboardWriter()
-        store.recopy(store.items[0], writer: writer)
+        store.recopy(store.items[0], writer: writer, pasteboard: NSPasteboard.withUniqueName())
 
         #expect(writer.ignoreSelfWriteCalled)
     }
 }
 
+@MainActor
 @Suite("HistoryStore — filteredItems & matchCount")
 struct HistoryStoreFilterTests {
 
@@ -235,6 +242,7 @@ struct HistoryStoreFilterTests {
     }
 }
 
+@MainActor
 @Suite("HistoryStore — maxItems constant")
 struct HistoryStoreConstantsTests {
 

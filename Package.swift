@@ -21,7 +21,8 @@ let package = Package(
             dependencies: [
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts")
             ],
-            path: "Sources/Clipurr"
+            path: "Sources/Clipurr",
+            exclude: ["Info.plist"]
         ),
         .testTarget(
             name: "ClipurrTests",

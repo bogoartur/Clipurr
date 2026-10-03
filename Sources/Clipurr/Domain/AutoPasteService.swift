@@ -13,7 +13,7 @@
 
 import Foundation
 import AppKit
-import ApplicationServices
+@preconcurrency import ApplicationServices
 import Carbon.HIToolbox
 import os.log
 

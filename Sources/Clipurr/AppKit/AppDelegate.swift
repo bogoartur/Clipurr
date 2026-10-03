@@ -12,6 +12,7 @@ import AppKit
 import SwiftUI
 import KeyboardShortcuts
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Properties
@@ -26,14 +27,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var clipboardMonitor: ClipboardMonitor!
 
     /// Manages the launch-at-login preference.
-    private(set) var launchAtLoginManager: LaunchAtLoginManager!
+    private(set) var launchAtLoginManager = LaunchAtLoginManager()
 
     /// On-device OCR service used by the clipboard monitor for image items.
     private(set) var ocrService: OCRService!
 
     /// Observable store holding the user-tunable preferences.
     @MainActor
-    private(set) var preferencesStore: PreferencesStore!
+    private(set) var preferencesStore = PreferencesStore()
 
     /// Synthesizes paste into the previously-frontmost app after a quick-paste.
     @MainActor
@@ -48,13 +49,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Create core components.
         ocrService = OCRService()
         MainActor.assumeIsolated {
-            preferencesStore = PreferencesStore()
             autoPasteService = AutoPasteService()
         }
         historyStore = HistoryStore()
         clipboardMonitor = ClipboardMonitor(ocrService: ocrService)
         statusBarController = StatusBarController(autoPasteService: autoPasteService)
-        launchAtLoginManager = LaunchAtLoginManager()
 
         // Restore persisted clipboard history from disk.
         historyStore.loadFromDisk()
@@ -93,7 +92,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Start polling the system clipboard.
-        clipboardMonitor.startMonitoring()
+        let demoMode = ProcessInfo.processInfo.arguments.contains("--demo")
+            || Bundle.main.object(forInfoDictionaryKey: "ClipurrDemoMode") as? Bool == true
+        if demoMode {
+            seedDemoHistory()
+        } else {
+            clipboardMonitor.startMonitoring()
+        }
 
         // Create the popover content view with shared dependencies.
         // `dragStateChanged` lets `PopoverView` flip the popover's
@@ -118,12 +123,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         }
         statusBarController.setup(with: popoverView)
+        if demoMode {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.statusBarController.showPopover()
+            }
+        }
 
         // Register the global shortcut. `KeyboardShortcuts` persists the
         // user-bound combination under the `.togglePopover` name and ships
         // Cmd+Shift+V as the baseline (see `PreferencesStore`).
         KeyboardShortcuts.onKeyDown(for: .togglePopover) { [weak self] in
             self?.statusBarController.togglePopover()
+        }
+    }
+
+    /// Deterministic public samples, with no system clipboard monitoring.
+    private func seedDemoHistory() {
+        historyStore.addItem(.text("Review the API contract\nHandle empty and error states."))
+        if let note = historyStore.items.first { historyStore.togglePin(note) }
+        historyStore.addItem(.text("SELECT name FROM projects WHERE status = 'active';"))
+        historyStore.addItem(.file([URL(fileURLWithPath: "/example/project-notes.md")]))
+        let image = DemoSamples.notesImage()
+        if let id = historyStore.addRepresentation(.init(payload: .image(image))) {
+            Task {
+                let text = await ocrService.recognize(imageData: image)
+                historyStore.applyOCR(text, to: id)
+            }
         }
     }
 

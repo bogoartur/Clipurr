@@ -16,6 +16,7 @@ import os.log
 /// Protocol for clipboard write coordination.
 /// `ClipboardMonitor` will conform to this so that re-copy operations
 /// can signal the monitor to ignore the self-initiated pasteboard change.
+@MainActor
 protocol ClipboardWritable {
     func setIgnoreSelfWrite()
 }
@@ -30,6 +31,7 @@ protocol ClipboardWritable {
 /// array is kept newest-first among non-pinned items so eviction remains
 /// trivially correct.
 @Observable
+@MainActor
 final class HistoryStore {
 
     // MARK: - Constants
@@ -362,11 +364,11 @@ final class HistoryStore {
     func recopy(
         _ item: ClipboardItem,
         writer: ClipboardWritable,
-        format: RecopyFormat = .rich
+        format: RecopyFormat = .rich,
+        pasteboard: NSPasteboard = .general
     ) {
         writer.setIgnoreSelfWrite()
 
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
         switch item.content {

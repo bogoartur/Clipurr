@@ -93,7 +93,7 @@ actor OCRService {
             return ""
         }
 
-        let observations = request.results as? [VNRecognizedTextObservation] ?? []
+        let observations = request.results ?? []
         if observations.isEmpty {
             Self.logger.debug("OCR produced no observations")
             return ""

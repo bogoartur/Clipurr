@@ -22,6 +22,7 @@ import os.log
 /// `OCRService.recognize(imageData:)` task and invokes `onOCRCompleted`
 /// with the resulting `(id, text)` tuple once recognition finishes.
 @Observable
+@MainActor
 final class ClipboardMonitor: ClipboardWritable {
 
     // MARK: - Constants
@@ -97,7 +98,7 @@ final class ClipboardMonitor: ClipboardWritable {
             withTimeInterval: Self.pollingInterval,
             repeats: true
         ) { [weak self] _ in
-            self?.checkForChanges()
+            MainActor.assumeIsolated { self?.checkForChanges() }
         }
     }
 

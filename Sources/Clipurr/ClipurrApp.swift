@@ -19,12 +19,8 @@ struct ClipurrApp: App {
         // No visible window — the app lives entirely in the menu bar.
         // The AppDelegate sets up the NSStatusItem and popover.
         //
-        // The Settings scene body is lazy: it runs when the user opens
-        // Preferences (Cmd+,), by which point `applicationDidFinishLaunching`
-        // has already built `preferencesStore` and `launchAtLoginManager`.
-        // `MainActor.assumeIsolated` matches the pattern used in AppDelegate
-        // for touching main-actor-isolated state from non-isolated contexts
-        // under Swift 6 strict concurrency.
+        // SwiftUI can evaluate Settings before applicationDidFinishLaunching.
+        // Its dependencies are initialized when the delegate is created.
         Settings {
             MainActor.assumeIsolated {
                 PreferencesView(
