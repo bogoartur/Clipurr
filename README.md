@@ -1,18 +1,44 @@
-# 🐾 Clipurr
+# Clipurr
 
-Clipurr is a personal, lightweight clipboard manager built specifically for macOS. It runs quietly in the background, keeping an easily accessible history of your copied text, images, and files so you never lose track of your recent snippets.
+A native macOS clipboard-history utility built with SwiftUI and AppKit.
 
-## Features
-* **Text, Image & File History:** Captures copied text (with optional rich RTF/HTML variants), images, and file references from Finder.
-* **On-Device OCR:** Screenshots become searchable — text inside images is recognized via Apple's Vision framework.
-* **Smart Dedup & Pinned Items:** Re-copying existing content promotes it to the top instead of duplicating; pin anything to keep it safe from eviction.
-* **Mac-Native Workflow:** Designed specifically for macOS 26 with Liquid Glass styling, Force Touch preview, and a customizable global shortcut.
-* **Local & Private:** 100% self-use and locally hosted. Your clipboard data never leaves your machine.
+**[Open the implementation and source code](https://github.com/bogoartur/Clipurr/tree/feat/clipboard-manager-implementation)**. The implementation currently lives on `feat/clipboard-manager-implementation`; `main` is the project landing page.
 
-## Getting Started
+## Implemented workflow
 
-1. Clone the repository to your local machine.
-2. Open the project in Xcode 26 (or run `swift build` from the terminal to resolve dependencies and compile).
-3. Build and run the project.
+Clipboard capture → deduplication and local JSON storage → search (including Apple Vision OCR) → re-copy.
 
-Preferences open with `Cmd+,` and let you rebind the global shortcut, set the history cap, enable age-based expiry, pick the default re-copy format (rich vs plain), and toggle auto-paste for the Cmd+1…Cmd+9 quick-paste shortcuts.
+- Text, images and Finder file references; optional RTF/HTML text representations.
+- Pinning, configurable history cap and optional age expiry. Pins survive automatic eviction, but explicit deletion still removes them.
+- Rich/plain re-copy, global shortcut, Cmd+1 through Cmd+9 quick re-copy and optional auto-paste.
+
+## Build from source
+
+Requires **macOS 26, Swift 6.2 and full Xcode 26 with the macOS 26 SDK**. Command Line Tools alone are insufficient for the current dependencies.
+
+```sh
+git clone --branch feat/clipboard-manager-implementation https://github.com/bogoartur/Clipurr.git
+cd Clipurr
+swift build
+swift test
+swift run Clipurr
+```
+
+On October 3, 2026, dependency resolution completed, but `swift build` stopped in KeyboardShortcuts because the Command Line Tools installation lacks `PreviewsMacros`; `swift test` stopped because XCTest is unavailable. App launch and end-to-end behavior remain unverified in this pass. No signed release is published.
+
+## Storage and permissions
+
+History is written to `~/Library/Application Support/Clipurr/history.json`; OCR uses Apple Vision. The app does not encrypt the history file. There are no per-app exclusions or secret-detection filters. Optional auto-paste uses Accessibility permission to send Cmd+V. Launch-at-login and packaged-app behavior still need verification with a proper app bundle.
+
+## Source map
+
+- `Sources/Clipurr/Domain`: monitoring, extraction, storage, OCR and preferences.
+- `Sources/Clipurr/AppKit`: menu-bar popover and application wiring.
+- `Sources/Clipurr/Views`: list, search, preview and settings.
+- `Tests/ClipurrTests`: serialization and history-store tests.
+
+## Em português
+
+Utilitário nativo de histórico da área de transferência para macOS 26. Captura textos, imagens e referências de arquivos, com busca, OCR local, deduplicação e itens fixados. O código está na branch de implementação acima. Projeto em desenvolvimento: build, testes e comportamento completo precisam ser verificados com Xcode 26 antes de uma versão pública.
+
+[Portfolio](https://www.arturbogo.dev/) · [Artur Bogo](https://www.linkedin.com/in/arturbogo/)
