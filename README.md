@@ -2,7 +2,7 @@
 
 A native macOS clipboard-history utility built with SwiftUI and AppKit.
 
-**[Open the implementation and source code](https://github.com/bogoartur/Clipurr/tree/feat/clipboard-manager-implementation)**. The implementation currently lives on `feat/clipboard-manager-implementation`; `main` is the project landing page.
+The implementation, tests and verified fixes are available on **[main](https://github.com/bogoartur/Clipurr)**.
 
 ## Implemented workflow
 
@@ -17,7 +17,7 @@ Clipboard capture → deduplication and local JSON storage → search (including
 Requires **macOS 26, Swift 6.2 and full Xcode 26 or newer with a compatible macOS SDK**. Command Line Tools alone are insufficient for the current dependencies.
 
 ```sh
-git clone --branch feat/clipboard-manager-implementation https://github.com/bogoartur/Clipurr.git
+git clone https://github.com/bogoartur/Clipurr.git
 cd Clipurr
 swift build
 swift test
@@ -34,7 +34,6 @@ swift run Clipurr --demo
 
 Demo history uses a separate temporary directory. `CLIPURR_DATA_DIRECTORY` can also select a disposable storage directory for tests. Demo mode still permits manual re-copy; avoid clicking items if you want to preserve the system clipboard.
 
-
 ## Storage and permissions
 
 History is written to `~/Library/Application Support/Clipurr/history.json`; OCR uses Apple Vision. The app does not encrypt the history file. There are no per-app exclusions or secret-detection filters. Optional auto-paste uses Accessibility permission to send Cmd+V. Launch-at-login and auto-paste still need end-to-end verification; they were not enabled during the demo.
@@ -48,6 +47,6 @@ History is written to `~/Library/Application Support/Clipurr/history.json`; OCR 
 
 ## Em português
 
-Utilitário nativo de histórico da área de transferência para macOS 26. Captura textos, imagens e referências de arquivos, com busca, OCR local, deduplicação e itens fixados. O código está na branch de implementação acima. Projeto em desenvolvimento: build e testes passaram com Xcode completo, e a busca por OCR foi verificada no app nativo. Ainda não há versão assinada publicada.
+Utilitário nativo de histórico da área de transferência para macOS 26. Captura textos, imagens e referências de arquivos, com busca, OCR local, deduplicação e itens fixados. O código e os testes estão na branch `main`. Projeto em desenvolvimento: build e testes passaram com Xcode completo, e a busca por OCR foi verificada no app nativo. Ainda não há versão assinada publicada.
 
 [Portfolio](https://www.arturbogo.dev/) · [Artur Bogo](https://www.linkedin.com/in/arturbogo/)
